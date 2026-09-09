@@ -1,0 +1,107 @@
+import { useState, useEffect, useCallback } from 'react';
+import { supabase } from '../lib/supabase';
+import {
+  signInWithEmail,
+  signUpWithEmail,
+  signOut as authSignOut,
+  resetPassword,
+  changePassword,
+  buildProfile,
+  AuthUser,
+  AuthError,
+} from '../lib/auth';
+
+interface AuthState {
+  user: AuthUser | null;
+  loading: boolean;
+  error: string | null;
+}
+
+export function useAuth() {
+  const [state, setState] = useState<AuthState>({ user: null, loading: true, error: null });
+
+  useEffect(() => {
+    // Hydrate from existing session
+    supabase.auth.getSession().then(({ data: { session } }) => {
+      if (session?.user) {
+        loadProfile(session.user.id);
+      } else {
+        setState({ user: null, loading: false, error: null });
+      }
+    });
+
+    const { data: { subscription } } = supabase.auth.onAuthStateChange((_event, session) => {
+      if (session?.user) loadProfile(session.user.id);
+      else setState({ user: null, loading: false, error: null });
+    });
+
+    return () => subscription.unsubscribe();
+  }, []);
+
+  async function loadProfile(id: string) {
+    try {
+      const { data, error } = await supabase
+        .from('profiles')
+        .select('*')
+        .eq('id', id)
+        .single();
+      if (error) throw error;
+      setState({ user: buildProfile(data), loading: false, error: null });
+    } catch (e) {
+      const msg = e instanceof Error ? e.message : 'Failed to load profile.';
+      setState({ user: null, loading: false, error: msg });
+    }
+  }
+
+  const signIn = useCallback(async (email: string, password: string) => {
+    setState((s) => ({ ...s, loading: true, error: null }));
+    try {
+      await signInWithEmail(email, password);
+      // onAuthStateChange will call loadProfile
+    } catch (e) {
+      const msg = e instanceof AuthError ? e.message : 'Sign-in failed.';
+      setState((s) => ({ ...s, loading: false, error: msg }));
+    }
+  }, []);
+
+  const signUp = useCallback(async (
+    email: string,
+    password: string,
+    fullName: string,
+    studentNumber?: string,
+  ): Promise<boolean> => {
+    setState((s) => ({ ...s, loading: true, error: null }));
+    try {
+      await signUpWithEmail(email, password, fullName, studentNumber);
+      setState((s) => ({ ...s, loading: false }));
+      return true;
+    } catch (e) {
+      const msg = e instanceof AuthError ? e.message : 'Sign-up failed.';
+      setState((s) => ({ ...s, loading: false, error: msg }));
+      return false;
+    }
+  }, []);
+
+  const signOut = useCallback(async () => {
+    await authSignOut();
+  }, []);
+
+  const sendPasswordReset = useCallback(async (email: string) => {
+    await resetPassword(email);
+  }, []);
+
+  const updatePassword = useCallback(async (newPassword: string) => {
+    await changePassword(newPassword);
+  }, []);
+
+  return {
+    user: state.user,
+    loading: state.loading,
+    error: state.error,
+    signIn,
+    signUp,
+    signOut,
+    sendPasswordReset,
+    updatePassword,
+  };
+}

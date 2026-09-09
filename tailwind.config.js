@@ -1,0 +1,88 @@
+/** @type {import('tailwindcss').Config} */
+module.exports = {
+  darkMode: 'class',
+  content: ['./src/**/*.{js,jsx,ts,tsx}', './public/index.html'],
+  theme: {
+    extend: {
+      colors: {
+        york: {
+          50: '#FFF5F5',
+          100: '#FFEBEB',
+          200: '#FFC7C7',
+          300: '#FFA3A3',
+          400: '#FF7F7F',
+          500: '#FF5555',
+          600: '#E31837',
+          700: '#C11628',
+          800: '#8B0D1F',
+          900: '#550815',
+        },
+        'red-light': '#F5E9EA',
+        gray: {
+          100: '#F5F5F5',
+          200: '#E8E8E8',
+          300: '#DCDCDC',
+          400: '#9E9E9E',
+          500: '#666666',
+          600: '#333333',
+          700: '#1A1A1A',
+          900: '#000000',
+        },
+        success: '#4CAF50',
+        warning: '#FF9800',
+        error: '#E31837',
+        info: '#2196F3',
+      },
+      fontSize: {
+        h1: ['28px', { lineHeight: '1.2' }],
+        h2: ['22px', { lineHeight: '1.3' }],
+        h3: ['18px', { lineHeight: '1.4' }],
+        body: ['16px', { lineHeight: '1.6' }],
+        small: ['14px', { lineHeight: '1.4' }],
+        tiny: ['12px', { lineHeight: '1.3' }],
+      },
+      spacing: {
+        xs: '4px',
+        sm: '8px',
+        md: '16px',
+        lg: '24px',
+        xl: '32px',
+        '2xl': '48px',
+      },
+      borderRadius: {
+        sm: '6px',
+        md: '8px',
+        lg: '12px',
+        full: '9999px',
+      },
+      boxShadow: {
+        sm: '0 2px 4px rgba(0,0,0,0.05)',
+        md: '0 4px 8px rgba(0,0,0,0.10)',
+        lg: '0 8px 16px rgba(0,0,0,0.15)',
+        xl: '0 12px 24px rgba(0,0,0,0.20)',
+      },
+      transitionDuration: {
+        fast: '150ms',
+        normal: '300ms',
+        slow: '500ms',
+      },
+      transitionTimingFunction: {
+        'ease-in-out': 'cubic-bezier(0.4, 0, 0.2, 1)',
+        'ease-out': 'cubic-bezier(0.0, 0, 0.2, 1)',
+        'ease-in': 'cubic-bezier(0.4, 0, 1, 1)',
+      },
+      fontFamily: {
+        sans: [
+          '-apple-system',
+          'BlinkMacSystemFont',
+          '"Segoe UI"',
+          'Roboto',
+          'Oxygen',
+          'Ubuntu',
+          'sans-serif',
+        ],
+      },
+    },
+  },
+  plugins: [],
+};
