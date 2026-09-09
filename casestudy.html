@@ -1,0 +1,1066 @@
+<title>BLW York Hub</title>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Cormorant+Galatia:ital,wght@0,400;0,500;0,600;1,400;1,500&family=DM+Sans:opsz,wght@9..40,300;9..40,400;9..40,500;9..40,600&family=DM+Mono:wght@400;500&display=swap">
+<style>
+/* === TOKENS === */
+:root {
+  --bg: #F6F5F0;
+  --surface: #FFFFFF;
+  --surface-2: #EEECE7;
+  --text-1: #1A1916;
+  --text-2: #6B6459;
+  --text-3: #9A9085;
+  --accent: #B8851E;
+  --accent-bg: #FBF3E2;
+  --border: #E2DED7;
+  --border-mid: #C9C4BB;
+  --font-d: 'Cormorant Galatia', Georgia, 'Times New Roman', serif;
+  --font-b: 'DM Sans', system-ui, sans-serif;
+  --font-m: 'DM Mono', 'Courier New', monospace;
+}
+@media (prefers-color-scheme: dark) {
+  :root:not([data-theme="light"]) {
+    --bg: #111210;
+    --surface: #191B17;
+    --surface-2: #212320;
+    --text-1: #F0EDE6;
+    --text-2: #9A9287;
+    --text-3: #6A6660;
+    --accent: #D4A23A;
+    --accent-bg: #261F10;
+    --border: #282B25;
+    --border-mid: #393C37;
+  }
+}
+:root[data-theme="dark"] {
+  --bg: #111210;
+  --surface: #191B17;
+  --surface-2: #212320;
+  --text-1: #F0EDE6;
+  --text-2: #9A9287;
+  --text-3: #6A6660;
+  --accent: #D4A23A;
+  --accent-bg: #261F10;
+  --border: #282B25;
+  --border-mid: #393C37;
+}
+
+/* === RESET === */
+*, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+html { font-size: 16px; scroll-behavior: smooth; }
+body {
+  font-family: var(--font-b);
+  background: var(--bg);
+  color: var(--text-1);
+  line-height: 1.6;
+  -webkit-font-smoothing: antialiased;
+}
+img { max-width: 100%; }
+
+/* === LAYOUT === */
+.col {
+  max-width: 740px;
+  margin: 0 auto;
+  padding: 0 2rem;
+}
+.wide {
+  max-width: 1060px;
+  margin: 0 auto;
+  padding: 0 2rem;
+}
+
+/* === EYEBROW STRIP === */
+.top-strip {
+  border-bottom: 1px solid var(--border);
+  padding: 0.875rem 0;
+}
+.top-strip-inner {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: 0.5rem;
+}
+.strip-label {
+  font-family: var(--font-m);
+  font-size: 0.68rem;
+  letter-spacing: 0.06em;
+  color: var(--text-3);
+}
+.strip-tag {
+  font-family: var(--font-m);
+  font-size: 0.68rem;
+  color: var(--accent);
+  letter-spacing: 0.04em;
+}
+
+/* === HERO === */
+.hero {
+  padding: 5.5rem 0 4.5rem;
+  border-bottom: 1px solid var(--border);
+}
+.hero-eyebrow {
+  font-family: var(--font-m);
+  font-size: 0.68rem;
+  letter-spacing: 0.1em;
+  text-transform: uppercase;
+  color: var(--accent);
+  margin-bottom: 1.5rem;
+}
+.hero h1 {
+  font-family: var(--font-d);
+  font-size: clamp(3.25rem, 8vw, 6rem);
+  font-weight: 500;
+  line-height: 1.02;
+  letter-spacing: -0.01em;
+  text-wrap: balance;
+  color: var(--text-1);
+  margin-bottom: 1.75rem;
+}
+.hero h1 em {
+  font-style: italic;
+  color: var(--text-2);
+}
+.hero-lead {
+  font-size: 1.0625rem;
+  font-weight: 300;
+  color: var(--text-2);
+  line-height: 1.65;
+  max-width: 520px;
+  margin-bottom: 3rem;
+}
+.hero-meta {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0;
+  border-top: 1px solid var(--border);
+  border-bottom: 1px solid var(--border);
+}
+.meta-cell {
+  padding: 1rem 1.5rem 1rem 0;
+  margin-right: 1.5rem;
+  border-right: 1px solid var(--border);
+  display: flex;
+  flex-direction: column;
+  gap: 0.2rem;
+}
+.meta-cell:last-child { border-right: none; margin-right: 0; }
+.meta-key {
+  font-family: var(--font-m);
+  font-size: 0.62rem;
+  letter-spacing: 0.1em;
+  text-transform: uppercase;
+  color: var(--text-3);
+}
+.meta-val {
+  font-size: 0.875rem;
+  font-weight: 500;
+  color: var(--text-2);
+}
+
+/* === PROBLEM (always dark — deliberate) === */
+.problem {
+  background: #1B3A2D;
+  padding: 5.5rem 0;
+}
+.problem .sec-eye {
+  color: #7BB89C;
+}
+.problem h2 {
+  font-family: var(--font-d);
+  font-size: clamp(2.25rem, 6vw, 4rem);
+  font-weight: 500;
+  line-height: 1.08;
+  text-wrap: balance;
+  color: #F0EDE6;
+  margin: 1rem 0 0.875rem;
+}
+.problem .sec-lead {
+  color: #8FBDA5;
+  max-width: 500px;
+  font-size: 0.9375rem;
+  margin-bottom: 3rem;
+}
+.prob-list {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(300px, 1fr));
+  border-top: 1px solid rgba(255,255,255,0.09);
+}
+.prob-item {
+  display: flex;
+  gap: 1rem;
+  padding: 1.375rem 2rem 1.375rem 0;
+  border-bottom: 1px solid rgba(255,255,255,0.07);
+  align-items: flex-start;
+}
+.prob-x {
+  font-family: var(--font-m);
+  font-size: 0.8rem;
+  color: #C4922A;
+  flex-shrink: 0;
+  margin-top: 0.15rem;
+  letter-spacing: 0.02em;
+}
+.prob-text {
+  font-size: 0.9rem;
+  color: #C8C4BC;
+  line-height: 1.5;
+}
+.prob-text strong { color: #EAE7E0; font-weight: 600; }
+.cascade {
+  margin-top: 3.5rem;
+  padding: 1.75rem 2rem;
+  background: rgba(0,0,0,0.22);
+  border-left: 2px solid #C4922A;
+}
+.cascade-eye {
+  font-family: var(--font-m);
+  font-size: 0.62rem;
+  letter-spacing: 0.1em;
+  text-transform: uppercase;
+  color: #7BB89C;
+  margin-bottom: 1.25rem;
+}
+.cascade-list {
+  list-style: none;
+  display: flex;
+  flex-direction: column;
+  gap: 0.625rem;
+}
+.cascade-list li {
+  font-family: var(--font-m);
+  font-size: 0.8rem;
+  color: #8A8A7A;
+  display: flex;
+  gap: 0.75rem;
+  align-items: baseline;
+}
+.cascade-list li::before {
+  content: '→';
+  color: #C4922A;
+  flex-shrink: 0;
+}
+
+/* === SHARED SECTION PARTS === */
+.sec {
+  padding: 5rem 0;
+  border-bottom: 1px solid var(--border);
+}
+.sec-eye {
+  font-family: var(--font-m);
+  font-size: 0.68rem;
+  letter-spacing: 0.1em;
+  text-transform: uppercase;
+  color: var(--accent);
+  margin-bottom: 0.875rem;
+  display: block;
+}
+.sec h2 {
+  font-family: var(--font-d);
+  font-size: clamp(2rem, 5vw, 3.25rem);
+  font-weight: 500;
+  line-height: 1.1;
+  text-wrap: balance;
+  color: var(--text-1);
+  margin-bottom: 0.875rem;
+}
+.sec-lead {
+  font-size: 1rem;
+  color: var(--text-2);
+  line-height: 1.65;
+  max-width: 540px;
+  margin-bottom: 3rem;
+}
+
+/* === FEATURES === */
+.feature-rows {
+  display: flex;
+  flex-direction: column;
+  border-top: 1px solid var(--border);
+}
+.feature-row {
+  display: grid;
+  grid-template-columns: 72px 1fr;
+  gap: 2rem;
+  padding: 2.5rem 0;
+  border-bottom: 1px solid var(--border);
+}
+.feature-row:last-child { border-bottom: none; }
+.feat-num {
+  font-family: var(--font-d);
+  font-size: 3rem;
+  font-weight: 400;
+  color: var(--border-mid);
+  line-height: 1;
+  font-variant-numeric: tabular-nums;
+  padding-top: 0.1rem;
+}
+.feat-body h3 {
+  font-size: 0.9375rem;
+  font-weight: 600;
+  color: var(--text-1);
+  margin-bottom: 0.5rem;
+}
+.feat-body p {
+  font-size: 0.9rem;
+  color: var(--text-2);
+  line-height: 1.6;
+  margin-bottom: 0.875rem;
+}
+.feat-tags {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.35rem;
+  margin-bottom: 0.875rem;
+}
+.feat-tag {
+  font-family: var(--font-m);
+  font-size: 0.68rem;
+  letter-spacing: 0.02em;
+  color: var(--text-3);
+  background: var(--surface-2);
+  border: 1px solid var(--border);
+  padding: 0.175rem 0.5rem;
+  border-radius: 2px;
+}
+.feat-outcome {
+  font-size: 0.85rem;
+  color: var(--text-2);
+  padding: 0.625rem 0.875rem;
+  background: var(--accent-bg);
+  border-left: 2px solid var(--accent);
+  line-height: 1.5;
+}
+.feat-outcome strong { color: var(--accent); font-weight: 600; }
+
+/* === STATS === */
+.stats-grid {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  border-top: 1px solid var(--border);
+}
+.stat {
+  padding: 2.75rem 2rem 2.75rem 0;
+  border-right: 1px solid var(--border);
+}
+.stat:last-child { border-right: none; }
+.stat + .stat { padding-left: 2rem; }
+.stat-val {
+  font-family: var(--font-d);
+  font-size: clamp(3.5rem, 7vw, 5.25rem);
+  font-weight: 400;
+  color: var(--text-1);
+  line-height: 1;
+  font-variant-numeric: tabular-nums;
+  letter-spacing: -0.02em;
+}
+.stat-sup {
+  font-size: 0.45em;
+  vertical-align: super;
+  color: var(--accent);
+}
+.stat-lbl {
+  font-size: 0.8125rem;
+  color: var(--text-2);
+  margin-top: 0.5rem;
+  line-height: 1.4;
+}
+.stat-note {
+  font-family: var(--font-m);
+  font-size: 0.65rem;
+  color: var(--text-3);
+  letter-spacing: 0.03em;
+  margin-top: 0.25rem;
+}
+.stats-caveat {
+  font-size: 0.8125rem;
+  color: var(--text-3);
+  font-style: italic;
+  margin-top: 2.5rem;
+  padding-top: 1.5rem;
+  border-top: 1px solid var(--border);
+}
+
+/* === TECH TABLE === */
+.table-wrap { overflow-x: auto; margin-bottom: 3rem; }
+table {
+  width: 100%;
+  border-collapse: collapse;
+  font-size: 0.875rem;
+}
+thead th {
+  text-align: left;
+  font-family: var(--font-m);
+  font-size: 0.62rem;
+  letter-spacing: 0.1em;
+  text-transform: uppercase;
+  color: var(--text-3);
+  padding: 0.625rem 1.25rem 0.625rem 0;
+  border-bottom: 1px solid var(--border-mid);
+  font-weight: 400;
+}
+tbody td {
+  padding: 0.9rem 1.25rem 0.9rem 0;
+  border-bottom: 1px solid var(--border);
+  color: var(--text-2);
+  vertical-align: top;
+}
+tbody td:first-child {
+  font-family: var(--font-m);
+  font-size: 0.78rem;
+  color: var(--text-3);
+  white-space: nowrap;
+  font-weight: 400;
+}
+tbody td:nth-child(2) {
+  font-weight: 500;
+  color: var(--text-1);
+}
+tbody tr:last-child td { border-bottom: none; }
+
+.decisions {
+  display: flex;
+  flex-direction: column;
+  gap: 0;
+  border-top: 1px solid var(--border);
+}
+.decision {
+  padding: 1.5rem 0;
+  border-bottom: 1px solid var(--border);
+  display: grid;
+  grid-template-columns: 200px 1fr;
+  gap: 2rem;
+  align-items: baseline;
+}
+.decision:last-child { border-bottom: none; }
+.decision-q {
+  font-size: 0.8125rem;
+  font-weight: 500;
+  color: var(--text-1);
+  line-height: 1.4;
+}
+.decision-a {
+  font-size: 0.875rem;
+  color: var(--text-2);
+  line-height: 1.6;
+}
+
+/* === SKILLS === */
+.skills-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(200px, 1fr));
+  gap: 1px;
+  background: var(--border);
+  border: 1px solid var(--border);
+}
+.skill-cat {
+  background: var(--bg);
+  padding: 1.5rem;
+}
+.skill-cat h4 {
+  font-family: var(--font-m);
+  font-size: 0.62rem;
+  letter-spacing: 0.1em;
+  text-transform: uppercase;
+  color: var(--accent);
+  margin-bottom: 1rem;
+  font-weight: 400;
+}
+.skill-cat ul {
+  list-style: none;
+  display: flex;
+  flex-direction: column;
+  gap: 0.45rem;
+}
+.skill-cat li {
+  font-size: 0.875rem;
+  color: var(--text-2);
+  padding-left: 1rem;
+  position: relative;
+  line-height: 1.4;
+}
+.skill-cat li::before {
+  content: '·';
+  position: absolute;
+  left: 0;
+  color: var(--text-3);
+}
+
+/* === LESSONS === */
+.lessons-cols {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 3.5rem;
+}
+.lessons-col h3 {
+  font-size: 0.8125rem;
+  font-weight: 600;
+  color: var(--text-1);
+  margin-bottom: 1.25rem;
+  padding-bottom: 0.75rem;
+  border-bottom: 1px solid var(--border);
+  letter-spacing: 0.01em;
+}
+.lessons-col ul {
+  list-style: none;
+  display: flex;
+  flex-direction: column;
+  gap: 0.875rem;
+}
+.lessons-col li {
+  font-size: 0.9rem;
+  color: var(--text-2);
+  padding-left: 1.375rem;
+  position: relative;
+  line-height: 1.5;
+}
+.worked li::before {
+  content: '✓';
+  position: absolute;
+  left: 0;
+  color: #4D9E74;
+  font-size: 0.7rem;
+  top: 0.2rem;
+}
+.improve li::before {
+  content: '→';
+  position: absolute;
+  left: 0;
+  color: var(--text-3);
+  font-size: 0.75rem;
+  top: 0.15rem;
+}
+
+/* === ABOUT === */
+.about-grid {
+  display: grid;
+  grid-template-columns: 1fr 2fr;
+  gap: 4rem;
+  align-items: start;
+}
+.about-ident .lbl {
+  font-family: var(--font-m);
+  font-size: 0.62rem;
+  letter-spacing: 0.1em;
+  text-transform: uppercase;
+  color: var(--accent);
+  margin-bottom: 0.625rem;
+  display: block;
+}
+.about-ident .name {
+  font-family: var(--font-d);
+  font-size: 2.25rem;
+  font-weight: 500;
+  color: var(--text-1);
+  line-height: 1.1;
+}
+.about-ident .role {
+  font-size: 0.8125rem;
+  color: var(--text-3);
+  margin-top: 0.35rem;
+  font-style: italic;
+}
+.about-content p {
+  font-size: 0.9375rem;
+  color: var(--text-2);
+  line-height: 1.65;
+  margin-bottom: 0.875rem;
+}
+.about-content p:last-child { margin-bottom: 0; }
+
+/* === FOOTER === */
+footer {
+  padding: 2.5rem 0;
+  border-top: 1px solid var(--border);
+}
+.footer-inner {
+  display: flex;
+  justify-content: space-between;
+  align-items: flex-end;
+  flex-wrap: wrap;
+  gap: 1.5rem;
+}
+.footer-left p {
+  font-size: 0.8rem;
+  color: var(--text-3);
+  line-height: 1.6;
+  max-width: 400px;
+}
+.footer-links {
+  display: flex;
+  flex-direction: column;
+  gap: 0.375rem;
+  align-items: flex-end;
+}
+.footer-link {
+  font-family: var(--font-m);
+  font-size: 0.75rem;
+  color: var(--text-2);
+  text-decoration: none;
+  letter-spacing: 0.02em;
+  display: flex;
+  align-items: center;
+  gap: 0.4rem;
+  transition: color 0.15s;
+}
+.footer-link:hover, .footer-link:focus { color: var(--accent); }
+.footer-link::before { content: '↗'; font-size: 0.65rem; }
+.footer-stack {
+  font-size: 0.75rem;
+  color: var(--text-3);
+  font-style: italic;
+  margin-top: 0.375rem;
+  text-align: right;
+}
+
+/* === RESPONSIVE === */
+@media (max-width: 600px) {
+  .feature-row { grid-template-columns: 1fr; gap: 0.5rem; }
+  .feat-num { font-size: 1.5rem; padding-top: 0; }
+  .stats-grid { grid-template-columns: 1fr 1fr; }
+  .stat:nth-child(2n) { border-right: none; }
+  .stat:nth-child(2n+1) { padding-left: 0; }
+  .stat:nth-child(n+3) { border-top: 1px solid var(--border); padding-top: 1.75rem; }
+  .lessons-cols { grid-template-columns: 1fr; gap: 2rem; }
+  .about-grid { grid-template-columns: 1fr; gap: 2rem; }
+  .decision { grid-template-columns: 1fr; gap: 0.5rem; }
+  .footer-inner { flex-direction: column; align-items: flex-start; }
+  .footer-links { align-items: flex-start; }
+  .footer-stack { text-align: left; }
+  .hero-meta { flex-direction: column; }
+  .meta-cell { border-right: none; border-bottom: 1px solid var(--border); padding: 0.75rem 0; margin-right: 0; }
+  .meta-cell:last-child { border-bottom: none; }
+}
+@media (prefers-reduced-motion: reduce) {
+  * { transition: none !important; animation: none !important; }
+}
+</style>
+
+<!-- EYEBROW -->
+<div class="top-strip">
+  <div class="wide top-strip-inner">
+    <span class="strip-label">Case Study · Christian Ministry · York University</span>
+    <span class="strip-tag">September 2026</span>
+  </div>
+</div>
+
+<!-- HERO -->
+<section class="hero">
+  <div class="col">
+    <p class="hero-eyebrow">BLW York Hub &nbsp;/&nbsp; Membership Platform</p>
+    <h1>Making <em>invisible</em><br>members visible.</h1>
+    <p class="hero-lead">A full-stack membership management platform built for a 23-member Christian ministry at York University — replacing scattered spreadsheets, forgotten follow-ups, and leadership blind spots with a single organized system.</p>
+    <div class="hero-meta">
+      <div class="meta-cell">
+        <span class="meta-key">Role</span>
+        <span class="meta-val">Developer &amp; Product Designer</span>
+      </div>
+      <div class="meta-cell">
+        <span class="meta-key">Stack</span>
+        <span class="meta-val">React · TypeScript · Supabase</span>
+      </div>
+      <div class="meta-cell">
+        <span class="meta-key">Status</span>
+        <span class="meta-val">Production Ready</span>
+      </div>
+      <div class="meta-cell">
+        <span class="meta-key">Deployed</span>
+        <span class="meta-val">Vercel + GitHub Actions</span>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- PROBLEM -->
+<section class="problem">
+  <div class="col">
+    <span class="sec-eye">The Problem</span>
+    <h2>Members were getting<br>lost in the cracks.</h2>
+    <p class="sec-lead">BLW York had 23 active members across multiple cell groups — and no reliable way to track any of them. Contact info lived in group chats, spreadsheets, and people's heads.</p>
+    <div class="prob-list">
+      <div class="prob-item">
+        <span class="prob-x">✗</span>
+        <span class="prob-text"><strong>No centralized system</strong> — contact info scattered across chats, spreadsheets, notes</span>
+      </div>
+      <div class="prob-item">
+        <span class="prob-x">✗</span>
+        <span class="prob-text"><strong>Members forgotten</strong> — new contacts logged but never followed up on</span>
+      </div>
+      <div class="prob-item">
+        <span class="prob-x">✗</span>
+        <span class="prob-text"><strong>Activity invisible</strong> — devotional reading, habit progress, attendance untracked</span>
+      </div>
+      <div class="prob-item">
+        <span class="prob-x">✗</span>
+        <span class="prob-text"><strong>Leadership blind spots</strong> — coordinators couldn't see who was struggling or thriving</span>
+      </div>
+      <div class="prob-item">
+        <span class="prob-x">✗</span>
+        <span class="prob-text"><strong>Inconsistent process</strong> — every cell leader tracked things differently</span>
+      </div>
+      <div class="prob-item">
+        <span class="prob-x">✗</span>
+        <span class="prob-text"><strong>No accountability</strong> — follow-ups happened ad-hoc, dependent on one person's memory</span>
+      </div>
+      <div class="prob-item">
+        <span class="prob-x">✗</span>
+        <span class="prob-text"><strong>Data silos</strong> — information locked per cell, invisible across the ministry</span>
+      </div>
+      <div class="prob-item">
+        <span class="prob-x">✗</span>
+        <span class="prob-text"><strong>Growth invisible</strong> — no way to measure spiritual engagement or development trends</span>
+      </div>
+    </div>
+    <div class="cascade">
+      <p class="cascade-eye">The downstream cascade</p>
+      <ul class="cascade-list">
+        <li>Contacts not followed up on &nbsp;— lost evangelism opportunities</li>
+        <li>Members disengaging &nbsp;— not noticed until they stopped coming</li>
+        <li>Meetings scattered across platforms &nbsp;— confusion, no-shows</li>
+        <li>Prayer requests forgotten &nbsp;— pastoral care gaps</li>
+        <li>Attendance data lost &nbsp;— can't identify at-risk members</li>
+      </ul>
+    </div>
+  </div>
+</section>
+
+<!-- SOLUTION INTRO -->
+<section class="sec">
+  <div class="col">
+    <span class="sec-eye">The Solution</span>
+    <h2>A complete membership<br>management platform.</h2>
+    <p class="sec-lead">I designed and built an app that gives leaders real-time visibility into member engagement, and gives every person in the ministry a clear, organized workflow for outreach and growth.</p>
+
+    <div class="feature-rows">
+      <div class="feature-row">
+        <div class="feat-num">01</div>
+        <div class="feat-body">
+          <h3>Member Directory &amp; Role-Based Access</h3>
+          <p>Centralized member profiles with four permission tiers: Coordinator, Admin, Cell Leader, and Member. Each role sees exactly what they need — cell leaders see their group's data, coordinators see everything. A member approval workflow gives cell leaders control over who joins.</p>
+          <div class="feat-tags">
+            <span class="feat-tag">Supabase RLS</span>
+            <span class="feat-tag">Multi-tenant</span>
+            <span class="feat-tag">Approval workflow</span>
+          </div>
+          <div class="feat-outcome"><strong>Solved:</strong> Leadership blind spots and inconsistent access control across the ministry.</div>
+        </div>
+      </div>
+
+      <div class="feature-row">
+        <div class="feat-num">02</div>
+        <div class="feat-body">
+          <h3>Contact Management (CRM)</h3>
+          <p>The core of the app. Log outreach contacts with status, tags, notes, and assigned follow-up owner. Bulk-import up to 50 contacts from CSV. Reassign follow-ups when someone can't continue. Move contacts between cells when they relocate. Archive unresponsive contacts without data loss.</p>
+          <div class="feat-tags">
+            <span class="feat-tag">Bulk CSV import</span>
+            <span class="feat-tag">Follow-up tracking</span>
+            <span class="feat-tag">Status workflow</span>
+            <span class="feat-tag">Contact reassignment</span>
+          </div>
+          <div class="feat-outcome"><strong>Solved:</strong> No more lost contacts, unclear responsibility, or ad-hoc follow-up processes.</div>
+        </div>
+      </div>
+
+      <div class="feature-row">
+        <div class="feat-num">03</div>
+        <div class="feat-body">
+          <h3>Member Growth Tracking</h3>
+          <p>Daily devotionals delivered as PDFs with per-member view tracking. Habit tracking with daily check-ins, visual streaks, and personal statistics. A testimony log where members share faith stories with community comments and encouragement.</p>
+          <div class="feat-tags">
+            <span class="feat-tag">PDF devotionals</span>
+            <span class="feat-tag">Habit streaks</span>
+            <span class="feat-tag">Testimony feed</span>
+            <span class="feat-tag">Engagement analytics</span>
+          </div>
+          <div class="feat-outcome"><strong>Solved:</strong> Spiritual growth metrics were invisible. Now leaders see who's reading, who's tracking habits, and who's sharing.</div>
+        </div>
+      </div>
+
+      <div class="feature-row">
+        <div class="feat-num">04</div>
+        <div class="feat-body">
+          <h3>Leadership Dashboard &amp; Reports</h3>
+          <p>Coordinators land on real-time stats: members per cell, contacts logged, devotional engagement, recent activity feed. Reports answer "which cells are most engaged?" and "who's not attending meetings?" — with CSV export for deeper analysis.</p>
+          <div class="feat-tags">
+            <span class="feat-tag">Real-time dashboard</span>
+            <span class="feat-tag">Engagement reports</span>
+            <span class="feat-tag">CSV export</span>
+            <span class="feat-tag">Activity feed</span>
+          </div>
+          <div class="feat-outcome"><strong>Solved:</strong> Leadership decisions were gut-feel. Now they're data-driven.</div>
+        </div>
+      </div>
+
+      <div class="feature-row">
+        <div class="feat-num">05</div>
+        <div class="feat-body">
+          <h3>Meetings, Notifications &amp; Communication</h3>
+          <p>Schedule meetings with Zoom integration, in-app RSVP, and automatic email reminders at 8 AM and one hour before. Push notifications keep members informed. Weekly Messages deliver coordinated leadership communications across email and push. Daily Confessions build community accountability.</p>
+          <div class="feat-tags">
+            <span class="feat-tag">Zoom integration</span>
+            <span class="feat-tag">SendGrid email</span>
+            <span class="feat-tag">Web Push (VAPID)</span>
+            <span class="feat-tag">RSVP tracking</span>
+          </div>
+          <div class="feat-outcome"><strong>Solved:</strong> Meetings scattered, reminders forgotten, attendance unpredictable.</div>
+        </div>
+      </div>
+
+      <div class="feature-row">
+        <div class="feat-num">06</div>
+        <div class="feat-body">
+          <h3>Accessibility, Mobile &amp; PWA</h3>
+          <p>WCAG 2.1 AA compliant throughout — keyboard navigation, screen reader support, contrast ratios. Mobile-first design with dark mode. Installed as a PWA for offline devotional reading when there's no signal. Multi-language scaffold ready for growth.</p>
+          <div class="feat-tags">
+            <span class="feat-tag">WCAG 2.1 AA</span>
+            <span class="feat-tag">PWA / offline</span>
+            <span class="feat-tag">Dark mode</span>
+            <span class="feat-tag">i18n scaffold</span>
+          </div>
+          <div class="feat-outcome"><strong>Built right:</strong> Accessibility from day one — not retrofitted as an afterthought.</div>
+        </div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- STATS -->
+<section class="sec">
+  <div class="col">
+    <span class="sec-eye">Projected Impact</span>
+    <h2>What the numbers look like<br>at full deployment.</h2>
+    <div class="stats-grid">
+      <div class="stat">
+        <div class="stat-val">500<span class="stat-sup">+</span></div>
+        <div class="stat-lbl">Contacts tracked</div>
+        <div class="stat-note">vs. scattered spreadsheets</div>
+      </div>
+      <div class="stat">
+        <div class="stat-val">85<span class="stat-sup">%</span></div>
+        <div class="stat-lbl">Devotional completion</div>
+        <div class="stat-note">visibility + push notifications</div>
+      </div>
+      <div class="stat">
+        <div class="stat-val">100<span class="stat-sup">%</span></div>
+        <div class="stat-lbl">Follow-ups assigned</div>
+        <div class="stat-note">no one falls through the cracks</div>
+      </div>
+      <div class="stat">
+        <div class="stat-val">25<span class="stat-sup">+</span></div>
+        <div class="stat-lbl">Features shipped</div>
+        <div class="stat-note">across 6 functional areas</div>
+      </div>
+      <div class="stat">
+        <div class="stat-val">296<span class="stat-sup">kb</span></div>
+        <div class="stat-lbl">Production bundle</div>
+        <div class="stat-note">optimized for mobile</div>
+      </div>
+      <div class="stat">
+        <div class="stat-val">4/4</div>
+        <div class="stat-lbl">Test suites passing</div>
+        <div class="stat-note">TypeScript strict mode</div>
+      </div>
+    </div>
+    <p class="stats-caveat">Completion rate and contact volume figures are projections based on feature design and notification reach. Technical metrics (bundle size, test coverage) are measured.</p>
+  </div>
+</section>
+
+<!-- TECH -->
+<section class="sec">
+  <div class="col">
+    <span class="sec-eye">Technical Execution</span>
+    <h2>Architecture decisions<br>that were made deliberately.</h2>
+    <p class="sec-lead" style="margin-bottom:2rem;">Every layer of the stack was chosen against a specific constraint — not defaulted to.</p>
+
+    <div class="table-wrap">
+      <table>
+        <thead>
+          <tr>
+            <th>Layer</th>
+            <th>Technology</th>
+            <th>Why this, not the alternative</th>
+          </tr>
+        </thead>
+        <tbody>
+          <tr>
+            <td>Frontend</td>
+            <td>React 18 + TypeScript</td>
+            <td>Strict mode catches bugs before runtime; self-documenting types reduce onboarding cost. Considered Vue — less hireable, ruled out.</td>
+          </tr>
+          <tr>
+            <td>Styling</td>
+            <td>Tailwind CSS</td>
+            <td>Utility-first keeps component styles colocated with structure. No separate CSS files to maintain.</td>
+          </tr>
+          <tr>
+            <td>Database</td>
+            <td>Supabase (PostgreSQL)</td>
+            <td>Row-Level Security enforces data separation at the database level — not in application code where it can be bypassed. Firebase considered but lacks RLS.</td>
+          </tr>
+          <tr>
+            <td>Auth</td>
+            <td>Supabase Auth (JWT)</td>
+            <td>Built-in, integrates with RLS policies directly. No separate auth service to sync.</td>
+          </tr>
+          <tr>
+            <td>Backend logic</td>
+            <td>Supabase Edge Functions</td>
+            <td>Serverless — zero DevOps overhead at current scale. SendGrid and Zoom secrets stay server-side, never in the browser.</td>
+          </tr>
+          <tr>
+            <td>Hosting</td>
+            <td>Vercel</td>
+            <td>Push to GitHub → auto-deploys. Preview environments on every branch. AWS was overkill for this scale.</td>
+          </tr>
+          <tr>
+            <td>CI/CD</td>
+            <td>GitHub Actions</td>
+            <td>Automated tests run on every PR. Nothing merges without passing TypeScript and test suites.</td>
+          </tr>
+          <tr>
+            <td>Integrations</td>
+            <td>Google Drive · SendGrid · Zoom</td>
+            <td>Each solves a specific real workflow gap — not added for technical interest.</td>
+          </tr>
+        </tbody>
+      </table>
+    </div>
+
+    <div class="decisions">
+      <div class="decision">
+        <div class="decision-q">Why Row-Level Security over application-level access control?</div>
+        <div class="decision-a">RLS policies enforce cell data separation at the database layer — a bug in application code can't accidentally expose another cell's contacts. This is the same pattern enterprise multi-tenant SaaS uses. It also means any future API surface (mobile app, third-party integrations) inherits the same security model for free.</div>
+      </div>
+      <div class="decision">
+        <div class="decision-q">Why TypeScript strict mode throughout?</div>
+        <div class="decision-a">Strict mode prevents an entire class of runtime errors — null dereferences, wrong API shapes, missing fields on database responses. Combined with Supabase's generated types, the compiler catches mismatches between the database schema and the UI before they reach users.</div>
+      </div>
+      <div class="decision">
+        <div class="decision-q">Why build a PWA instead of a native app?</div>
+        <div class="decision-a">Members use the app on phones, often with unreliable campus Wi-Fi. A PWA installs from the browser, caches the daily devotional offline, and delivers push notifications — without the overhead of App Store distribution or maintaining a separate codebase.</div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- SKILLS -->
+<section class="sec">
+  <div class="col">
+    <span class="sec-eye">Skills Demonstrated</span>
+    <h2>What this project proves.</h2>
+    <p class="sec-lead" style="margin-bottom:2rem;">A selection of what's evidenced in the codebase — not claimed from coursework.</p>
+    <div class="skills-grid">
+      <div class="skill-cat">
+        <h4>Frontend</h4>
+        <ul>
+          <li>React 18 + modern hooks</li>
+          <li>TypeScript strict mode</li>
+          <li>Responsive design (375px–1440px)</li>
+          <li>WCAG 2.1 AA accessibility</li>
+          <li>Dark mode implementation</li>
+          <li>PWA + offline support</li>
+          <li>i18n scaffolding</li>
+          <li>100+ component library</li>
+        </ul>
+      </div>
+      <div class="skill-cat">
+        <h4>Backend &amp; Data</h4>
+        <ul>
+          <li>PostgreSQL + advanced SQL</li>
+          <li>Row-Level Security policies</li>
+          <li>Multi-tenant architecture</li>
+          <li>Real-time subscriptions</li>
+          <li>Edge Functions (serverless)</li>
+          <li>API integration (Drive, SendGrid, Zoom)</li>
+          <li>Web Push (VAPID keys)</li>
+        </ul>
+      </div>
+      <div class="skill-cat">
+        <h4>DevOps &amp; Delivery</h4>
+        <ul>
+          <li>GitHub Actions CI/CD</li>
+          <li>Vercel deployment</li>
+          <li>Environment management</li>
+          <li>Production optimization</li>
+          <li>Automated test suites</li>
+        </ul>
+      </div>
+      <div class="skill-cat">
+        <h4>Product Thinking</h4>
+        <ul>
+          <li>Problem identification from real users</li>
+          <li>Feature prioritization (CRM first)</li>
+          <li>User flow design</li>
+          <li>Role-based UX design</li>
+          <li>Shipping a complete product</li>
+          <li>Documentation (30+ pages)</li>
+        </ul>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- LESSONS -->
+<section class="sec">
+  <div class="col">
+    <span class="sec-eye">Lessons Learned</span>
+    <h2>What I'd do the same.<br>What I'd do differently.</h2>
+    <p class="sec-lead" style="margin-bottom:2.5rem;">Honest retrospective — not just what sounded good at the end.</p>
+    <div class="lessons-cols">
+      <div class="lessons-col worked">
+        <h3>What went well</h3>
+        <ul>
+          <li>Regular check-ins with org leaders shaped features before I built the wrong thing</li>
+          <li>Built the CRM core first — everything else became easier once contacts worked</li>
+          <li>Accessibility from day one, not retrofitted at the end</li>
+          <li>TypeScript strict mode caught every database shape mismatch early</li>
+          <li>RLS security policy designed up front — not bolted on after</li>
+        </ul>
+      </div>
+      <div class="lessons-col improve">
+        <h3>What I'd do differently</h3>
+        <ul>
+          <li>Design mobile-first, not responsive-last — a few screens needed rework</li>
+          <li>Get feedback from real members earlier, not just leadership</li>
+          <li>Add real-time collaboration on shared records from the start</li>
+          <li>Track in-app usage analytics from day one (can't instrument retroactively)</li>
+          <li>Build an onboarding flow — first-time users needed more guidance than I gave them</li>
+        </ul>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- ABOUT -->
+<section class="sec">
+  <div class="col">
+    <span class="sec-eye">About the Developer</span>
+    <div class="about-grid">
+      <div class="about-ident">
+        <span class="lbl">Developer</span>
+        <div class="name">Amber<br>Moseri</div>
+        <div class="role">Final-year Computer Science<br>York University</div>
+      </div>
+      <div class="about-content">
+        <p>I built BLW York Hub because I run the organization it serves. I wasn't guessing at what users needed — I was one of the users, and I watched the existing system fail weekly. That proximity shaped every product decision.</p>
+        <p>My background spans product thinking and user research, full-stack development across React and relational databases, and practical leadership experience running an active ministry chapter. I hold a Google Analytics Certificate and have applied that to thinking about how data flows through systems, not just dashboards.</p>
+        <p>This project represents the ability to understand a problem deeply, build a solution that actually works, and see it through to something deployable — not just something that compiles.</p>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- FOOTER -->
+<footer>
+  <div class="col">
+    <div class="footer-inner">
+      <div class="footer-left">
+        <p>BLW York Hub · Christian Club Portal</p>
+        <p>A membership management platform for faith communities.</p>
+      </div>
+      <div class="footer-links">
+        <a href="https://github.com/Amber-E-Moseri/club_management" class="footer-link" target="_blank" rel="noopener">Source code — GitHub</a>
+        <p class="footer-stack">React 18 · TypeScript · Supabase · Vercel · WCAG 2.1 AA</p>
+      </div>
+    </div>
+  </div>
+</footer>
