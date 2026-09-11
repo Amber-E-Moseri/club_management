@@ -11,7 +11,7 @@ export async function fetchConfessionsForDate(date: string): Promise<Confession[
     .eq('is_active', true)
     .order('created_at', { ascending: true });
 
-  if (error) throw error;
+  if (error) throw new Error(error.message);
 
   return (data ?? []).map((row: Record<string, unknown>) => {
     const declarations = (row.confession_declarations as { user_id: string }[]) ?? [];
@@ -36,7 +36,7 @@ export async function fetchUpcomingConfessions(days = 7): Promise<Confession[]> 
     .eq('is_active', true)
     .order('scheduled_date', { ascending: true });
 
-  if (error) throw error;
+  if (error) throw new Error(error.message);
 
   return (data ?? []).map((row: Record<string, unknown>) => {
     const declarations = (row.confession_declarations as { user_id: string }[]) ?? [];
@@ -56,7 +56,7 @@ export async function createConfession(input: {
 }): Promise<Confession> {
   const { data, error } = await supabase
     .from('confessions').insert(input).select().single();
-  if (error) throw error;
+  if (error) throw new Error(error.message);
   return data;
 }
 
@@ -65,12 +65,12 @@ export async function updateConfession(
   input: Partial<{ title: string; body: string; scheduled_date: string; is_active: boolean }>
 ): Promise<void> {
   const { error } = await supabase.from('confessions').update(input).eq('id', id);
-  if (error) throw error;
+  if (error) throw new Error(error.message);
 }
 
 export async function deleteConfession(id: string): Promise<void> {
   const { error } = await supabase.from('confessions').delete().eq('id', id);
-  if (error) throw error;
+  if (error) throw new Error(error.message);
 }
 
 export async function declareConfession(
@@ -80,7 +80,7 @@ export async function declareConfession(
   const { error } = await supabase
     .from('confession_declarations')
     .upsert({ confession_id: confessionId, user_id: userId });
-  if (error) throw error;
+  if (error) throw new Error(error.message);
 }
 
 export async function undeclareConfession(
@@ -91,7 +91,7 @@ export async function undeclareConfession(
     .from('confession_declarations')
     .delete()
     .match({ confession_id: confessionId, user_id: userId });
-  if (error) throw error;
+  if (error) throw new Error(error.message);
 }
 
 export async function fetchDeclarations(confessionId: string): Promise<ConfessionDeclaration[]> {
@@ -99,6 +99,6 @@ export async function fetchDeclarations(confessionId: string): Promise<Confessio
     .from('confession_declarations')
     .select('*')
     .eq('confession_id', confessionId);
-  if (error) throw error;
+  if (error) throw new Error(error.message);
   return data ?? [];
 }

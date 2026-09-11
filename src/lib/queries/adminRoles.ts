@@ -13,7 +13,7 @@ export async function fetchAdminRoles(): Promise<AdminRole[]> {
     .select('*, admin_role_permissions(permission_key)')
     .order('name', { ascending: true });
 
-  if (error) throw error;
+  if (error) throw new Error(error.message ?? 'Unknown error');
 
   return (data ?? []).map((role: Record<string, unknown>) => ({
     ...(role as unknown as AdminRole),
@@ -33,7 +33,7 @@ export async function createAdminRole(input: AdminRoleInput, createdBy: string):
     .select('*')
     .single();
 
-  if (error) throw error;
+  if (error) throw new Error(error.message ?? 'Unknown error');
   await replaceRolePermissions(role.id, input.permissions);
   return { ...role, permissions: input.permissions };
 }
@@ -51,7 +51,7 @@ export async function updateAdminRole(id: string, input: AdminRoleInput): Promis
     .select('*')
     .single();
 
-  if (error) throw error;
+  if (error) throw new Error(error.message ?? 'Unknown error');
   await replaceRolePermissions(id, input.permissions);
   return { ...role, permissions: input.permissions };
 }
@@ -63,7 +63,7 @@ export async function deleteAdminRole(id: string): Promise<void> {
     .eq('id', id)
     .eq('is_system', false);
 
-  if (error) throw error;
+  if (error) throw new Error(error.message ?? 'Unknown error');
 }
 
 export async function replaceRolePermissions(roleId: string, permissions: AdminPermissionKey[]): Promise<void> {
@@ -79,7 +79,7 @@ export async function replaceRolePermissions(roleId: string, permissions: AdminP
     .from('admin_role_permissions')
     .insert(permissions.map((permission_key) => ({ role_id: roleId, permission_key })));
 
-  if (error) throw error;
+  if (error) throw new Error(error.message ?? 'Unknown error');
 }
 
 export async function fetchRoleAssignments(): Promise<AdminRoleAssignment[]> {
@@ -88,7 +88,7 @@ export async function fetchRoleAssignments(): Promise<AdminRoleAssignment[]> {
     .select('*, role:admin_roles(*), user:profiles(id,email,full_name,role)')
     .order('assigned_at', { ascending: false });
 
-  if (error) throw error;
+  if (error) throw new Error(error.message ?? 'Unknown error');
   return data ?? [];
 }
 
@@ -100,7 +100,7 @@ export async function assignAdminRole(roleId: string, userId: string, assignedBy
       { onConflict: 'role_id,user_id' },
     );
 
-  if (error) throw error;
+  if (error) throw new Error(error.message ?? 'Unknown error');
 }
 
 export async function removeAdminRoleAssignment(assignmentId: string, currentUserId: string): Promise<void> {
@@ -116,7 +116,7 @@ export async function removeAdminRoleAssignment(assignmentId: string, currentUse
   }
 
   const { error } = await supabase.from('admin_role_assignments').delete().eq('id', assignmentId);
-  if (error) throw error;
+  if (error) throw new Error(error.message ?? 'Unknown error');
 }
 
 export async function fetchAssignableUsers(): Promise<Member[]> {
@@ -125,6 +125,6 @@ export async function fetchAssignableUsers(): Promise<Member[]> {
     .select('id,email,full_name,role,joined_at,avatar_url')
     .order('full_name', { ascending: true });
 
-  if (error) throw error;
+  if (error) throw new Error(error.message ?? 'Unknown error');
   return data ?? [];
 }

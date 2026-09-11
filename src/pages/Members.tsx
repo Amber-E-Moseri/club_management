@@ -20,8 +20,17 @@ export const Members: React.FC<Props> = ({ user }) => {
   const isCellLeader = isAdmin || userRole === 'cell_leader';
 
   useEffect(() => {
+    if (!isCellLeader) { setLoading(false); return; }
     getMembers().then(setMembers).catch(console.error).finally(() => setLoading(false));
-  }, []);
+  }, [isCellLeader]);
+
+  if (!isCellLeader) {
+    return (
+      <div className="flex-1 p-8 flex items-center justify-center">
+        <p className="text-sm text-red-600 font-medium">Access denied.</p>
+      </div>
+    );
+  }
 
   const filtered = members.filter(
     (m) =>

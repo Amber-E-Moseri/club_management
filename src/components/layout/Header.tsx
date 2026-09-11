@@ -43,7 +43,7 @@ export const Header: React.FC<HeaderProps> = ({
   return (
     <header
       className={cn(
-        'h-[60px] bg-white border-b-2 border-york-600 shadow-sm',
+        'h-[60px] bg-white border-b-2 border-york-600 shadow-sm dark:bg-slate-900',
         'flex items-center justify-between px-5 shrink-0 sticky top-0 z-30',
         className
       )}
@@ -58,7 +58,7 @@ export const Header: React.FC<HeaderProps> = ({
           aria-controls="mobile-nav-drawer"
           className={cn(
             'md:hidden flex items-center justify-center w-11 h-11 rounded-md shrink-0',
-            'text-gray-600 hover:bg-red-50 hover:text-york-600',
+            'text-gray-600 hover:bg-red-50 hover:text-york-600 dark:text-slate-300 dark:hover:bg-slate-800',
             'focus:outline-none focus:ring-2 focus:ring-york-600 transition-colors duration-150'
           )}
         >
@@ -94,7 +94,7 @@ export const Header: React.FC<HeaderProps> = ({
             aria-label="User menu"
             className={cn(
               'flex items-center gap-2 px-3 py-1.5 rounded-md',
-              'hover:bg-red-50 transition-colors duration-150',
+              'hover:bg-red-50 transition-colors duration-150 dark:hover:bg-slate-800',
               'focus:outline-none focus:ring-2 focus:ring-york-600'
             )}
           >
@@ -102,7 +102,7 @@ export const Header: React.FC<HeaderProps> = ({
               {getInitials(userName)}
             </div>
             <div className="text-left hidden sm:block">
-              <p className="text-sm font-semibold text-gray-900 leading-none">{userName}</p>
+              <p className="text-sm font-semibold text-gray-900 leading-none dark:text-slate-100">{userName}</p>
               {userRole && (
                 <p className="text-xs text-gray-400 capitalize mt-0.5">{userRole}</p>
               )}
@@ -117,26 +117,26 @@ export const Header: React.FC<HeaderProps> = ({
 
           {/* Dropdown */}
           {menuOpen && (
-            <div className="absolute right-0 top-full mt-1 w-48 bg-white border border-gray-200 rounded-lg shadow-lg py-1 z-40">
-              <div className="px-4 py-2 border-b border-gray-100">
-                <p className="text-xs font-bold text-gray-900 truncate">{userName}</p>
+            <div className="absolute right-0 top-full mt-1 w-48 bg-white border border-gray-200 rounded-lg shadow-lg py-1 z-40 dark:border-slate-700 dark:bg-slate-900">
+              <div className="px-4 py-2 border-b border-gray-100 dark:border-slate-700">
+                <p className="text-xs font-bold text-gray-900 truncate dark:text-slate-100">{userName}</p>
                 {userRole && <p className="text-xs text-gray-400 capitalize">{userRole}</p>}
               </div>
               <button
                 type="button"
-                className="w-full text-left px-4 py-2 text-sm text-gray-700 hover:bg-gray-50 transition-colors"
+                className="w-full text-left px-4 py-2 text-sm text-gray-700 hover:bg-gray-50 transition-colors dark:text-slate-200 dark:hover:bg-slate-800"
                 onClick={() => { setMenuOpen(false); navigate('/profile'); }}
               >
                 My Profile
               </button>
               <button
                 type="button"
-                className="w-full text-left px-4 py-2 text-sm text-gray-700 hover:bg-gray-50 transition-colors"
+                className="w-full text-left px-4 py-2 text-sm text-gray-700 hover:bg-gray-50 transition-colors dark:text-slate-200 dark:hover:bg-slate-800"
                 onClick={() => { setMenuOpen(false); navigate('/email-preferences'); }}
               >
                 Settings
               </button>
-              <div className="border-t border-gray-100 mt-1">
+              <div className="border-t border-gray-100 mt-1 dark:border-slate-700">
                 <button
                   type="button"
                   className="w-full text-left px-4 py-2 text-sm text-york-600 font-semibold hover:bg-red-50 transition-colors"

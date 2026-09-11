@@ -47,7 +47,7 @@ export async function globalSearch(
   ]);
 
   [contactRows.error, testimonyRows.error, memberRows.error, meetingRows.error].forEach((error) => {
-    if (error) throw error;
+    if (error) throw new Error(error.message ?? 'Unknown error');
   });
 
   const results: SearchResult[] = [

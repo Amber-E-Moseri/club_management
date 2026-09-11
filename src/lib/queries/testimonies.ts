@@ -32,7 +32,7 @@ export async function fetchTestimonies(filters: TestimonyFilters = {}): Promise<
   if (!filters.include_archived) q = q.neq('status', 'archived');
 
   const { data, error } = await q;
-  if (error) throw error;
+  if (error) throw new Error(error.message ?? 'Unknown error');
 
   const items = (data ?? []) as Testimony[];
 
@@ -81,14 +81,14 @@ export async function fetchPendingTestimonies(): Promise<Testimony[]> {
     .select('*')
     .eq('status', 'pending')
     .order('created_at', { ascending: true });
-  if (error) throw error;
+  if (error) throw new Error(error.message ?? 'Unknown error');
   return (data ?? []) as Testimony[];
 }
 
 export async function fetchTestimony(id: string): Promise<Testimony | null> {
   const { data, error } = await supabase
     .from('testimonies').select('*').eq('id', id).single();
-  if (error) throw error;
+  if (error) throw new Error(error.message ?? 'Unknown error');
   return data as Testimony | null;
 }
 
@@ -100,38 +100,38 @@ export async function createTestimony(
     : 'pending';
   const { data, error } = await supabase
     .from('testimonies').insert({ ...input, status }).select().single();
-  if (error) throw error;
+  if (error) throw new Error(error.message ?? 'Unknown error');
   return data as Testimony;
 }
 
 export async function updateTestimony(id: string, input: Partial<TestimonyInput>): Promise<Testimony> {
   const { data, error } = await supabase
     .from('testimonies').update(input).eq('id', id).select().single();
-  if (error) throw error;
+  if (error) throw new Error(error.message ?? 'Unknown error');
   return data as Testimony;
 }
 
 export async function deleteTestimony(id: string): Promise<void> {
   const { error } = await supabase.from('testimonies').delete().eq('id', id);
-  if (error) throw error;
+  if (error) throw new Error(error.message ?? 'Unknown error');
 }
 
 export async function approveTestimony(id: string): Promise<void> {
   const { error } = await supabase
     .from('testimonies').update({ status: 'approved' }).eq('id', id);
-  if (error) throw error;
+  if (error) throw new Error(error.message ?? 'Unknown error');
 }
 
 export async function rejectTestimony(id: string): Promise<void> {
   const { error } = await supabase
     .from('testimonies').update({ status: 'rejected' }).eq('id', id);
-  if (error) throw error;
+  if (error) throw new Error(error.message ?? 'Unknown error');
 }
 
 export async function archiveTestimony(id: string): Promise<void> {
   const { error } = await supabase
     .from('testimonies').update({ status: 'archived', archived_at: new Date().toISOString() }).eq('id', id);
-  if (error) throw error;
+  if (error) throw new Error(error.message ?? 'Unknown error');
 }
 
 // ─── Reactions ────────────────────────────────────────────────────────────────
@@ -166,7 +166,7 @@ export async function fetchComments(testimonyId: string): Promise<TestimonyComme
     .select('*')
     .eq('testimony_id', testimonyId)
     .order('created_at', { ascending: true });
-  if (error) throw error;
+  if (error) throw new Error(error.message ?? 'Unknown error');
   return (data ?? []).map((c) => ({ ...c, is_mine: c.author_id === userId }));
 }
 
@@ -177,13 +177,13 @@ export async function createComment(testimonyId: string, body: string, authorNam
     .from('testimony_comments')
     .insert({ testimony_id: testimonyId, author_id: userId, author_name: authorName, body })
     .select().single();
-  if (error) throw error;
+  if (error) throw new Error(error.message ?? 'Unknown error');
   return { ...data, is_mine: true };
 }
 
 export async function deleteComment(id: string): Promise<void> {
   const { error } = await supabase.from('testimony_comments').delete().eq('id', id);
-  if (error) throw error;
+  if (error) throw new Error(error.message ?? 'Unknown error');
 }
 
 // ─── Image upload ─────────────────────────────────────────────────────────────
@@ -192,7 +192,7 @@ export async function uploadTestimonyImage(file: File, userId: string): Promise<
   const ext = file.name.split('.').pop();
   const path = `${userId}/${Date.now()}.${ext}`;
   const { error } = await supabase.storage.from('testimony-images').upload(path, file, { upsert: true });
-  if (error) throw error;
+  if (error) throw new Error(error.message ?? 'Unknown error');
   const { data } = supabase.storage.from('testimony-images').getPublicUrl(path);
   return data.publicUrl;
 }

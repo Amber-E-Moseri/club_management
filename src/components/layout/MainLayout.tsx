@@ -20,7 +20,7 @@ export const MainLayout: React.FC<MainLayoutProps> = ({
   const [mobileNavOpen, setMobileNavOpen] = useState(false);
 
   return (
-    <div className="flex flex-col min-h-screen bg-gray-50">
+    <div className="flex flex-col min-h-screen bg-gray-50 text-gray-600 dark:bg-slate-950 dark:text-slate-300">
       {/* Skip link for keyboard/screen reader users */}
       <a href="#main-content" className="skip-link">Skip to main content</a>
 
@@ -57,7 +57,7 @@ export const MainLayout: React.FC<MainLayoutProps> = ({
           {/* Desktop header */}
           <Header userName={user?.name} userRole={user?.role} onLogout={onSignOut} className="hidden md:flex" />
 
-          <main id="main-content" className={cn('flex-1 overflow-y-auto', 'px-4 py-5 sm:px-6 sm:py-6 lg:px-8 lg:py-8')}>
+          <main id="main-content" className={cn('flex-1 overflow-y-auto bg-gray-50 dark:bg-slate-950', 'px-4 py-5 sm:px-6 sm:py-6 lg:px-8 lg:py-8')}>
             {children}
           </main>
         </div>

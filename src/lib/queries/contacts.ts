@@ -20,14 +20,14 @@ export async function fetchContacts(filters: ContactFilters = {}): Promise<Conta
   if (filters.date_to)   q = q.lte('date_contacted', filters.date_to);
 
   const { data, error } = await q;
-  if (error) throw error;
+  if (error) throw new Error(error.message ?? 'Unknown error');
   return data ?? [];
 }
 
 export async function fetchContact(id: string): Promise<Contact | null> {
   const { data, error } = await supabase
     .from('contacts').select('*').eq('id', id).single();
-  if (error) throw error;
+  if (error) throw new Error(error.message ?? 'Unknown error');
   return data;
 }
 
@@ -46,7 +46,7 @@ export async function createContact(
 ): Promise<Contact> {
   const { data, error } = await supabase
     .from('contacts').insert(input).select().single();
-  if (error) throw error;
+  if (error) throw new Error(error.message ?? 'Unknown error');
   return data;
 }
 
@@ -56,49 +56,49 @@ export async function updateContact(
 ): Promise<Contact> {
   const { data, error } = await supabase
     .from('contacts').update(input).eq('id', id).select().single();
-  if (error) throw error;
+  if (error) throw new Error(error.message ?? 'Unknown error');
   return data;
 }
 
 export async function archiveContact(id: string): Promise<void> {
   const { error } = await supabase
     .from('contacts').update({ archived: true }).eq('id', id);
-  if (error) throw error;
+  if (error) throw new Error(error.message ?? 'Unknown error');
 }
 
 export async function unarchiveContact(id: string): Promise<void> {
   const { error } = await supabase
     .from('contacts').update({ archived: false }).eq('id', id);
-  if (error) throw error;
+  if (error) throw new Error(error.message ?? 'Unknown error');
 }
 
 export async function deleteContact(id: string): Promise<void> {
   const { error } = await supabase.from('contacts').delete().eq('id', id);
-  if (error) throw error;
+  if (error) throw new Error(error.message ?? 'Unknown error');
 }
 
 export async function bulkArchiveContacts(ids: string[]): Promise<void> {
   const { error } = await supabase
     .from('contacts').update({ archived: true }).in('id', ids);
-  if (error) throw error;
+  if (error) throw new Error(error.message ?? 'Unknown error');
 }
 
 export async function bulkDeleteContacts(ids: string[]): Promise<void> {
   const { error } = await supabase.from('contacts').delete().in('id', ids);
-  if (error) throw error;
+  if (error) throw new Error(error.message ?? 'Unknown error');
 }
 
 export async function fetchTags(): Promise<ContactTag[]> {
   const { data, error } = await supabase
     .from('tags_settings').select('*').order('sort_order', { ascending: true });
-  if (error) throw error;
+  if (error) throw new Error(error.message ?? 'Unknown error');
   return data ?? [];
 }
 
 export async function fetchStatuses(): Promise<ContactStatus[]> {
   const { data, error } = await supabase
     .from('status_settings').select('*').order('sort_order', { ascending: true });
-  if (error) throw error;
+  if (error) throw new Error(error.message ?? 'Unknown error');
   return data ?? [];
 }
 
@@ -107,7 +107,7 @@ export async function fetchStatuses(): Promise<ContactStatus[]> {
 export async function fetchCells(): Promise<Cell[]> {
   const { data, error } = await supabase
     .from('cells').select('id, name, leader_id').order('name', { ascending: true });
-  if (error) throw error;
+  if (error) throw new Error(error.message ?? 'Unknown error');
   return data ?? [];
 }
 
@@ -117,7 +117,7 @@ export async function fetchContactTags(contactId: string): Promise<ContactTagRel
   const { data, error } = await supabase
     .from('contact_tags').select('*').eq('contact_id', contactId)
     .order('tagged_on', { ascending: false });
-  if (error) throw error;
+  if (error) throw new Error(error.message ?? 'Unknown error');
   return data ?? [];
 }
 
@@ -142,7 +142,7 @@ export async function fetchContactFollowUps(contactId: string): Promise<ContactF
     .select('*, assignee:profiles!assigned_to(id, email, full_name)')
     .eq('contact_id', contactId)
     .order('assigned_on', { ascending: false });
-  if (error) throw error;
+  if (error) throw new Error(error.message ?? 'Unknown error');
   return (data ?? []) as ContactFollowUp[];
 }
 
@@ -190,7 +190,7 @@ export async function moveContactToCell(
 ): Promise<void> {
   const { error } = await supabase
     .from('contacts').update({ cell_id: newCellId }).eq('id', contactId);
-  if (error) throw error;
+  if (error) throw new Error(error.message ?? 'Unknown error');
 
   if (newAssigneeId) {
     await reassignFollowUp(contactId, newAssigneeId, movedBy, reason);
@@ -346,7 +346,7 @@ export async function fetchContactAuditLog(contactId: string): Promise<ContactAu
   const { data, error } = await supabase
     .from('contact_audit_log').select('*').eq('contact_id', contactId)
     .order('created_at', { ascending: false });
-  if (error) throw error;
+  if (error) throw new Error(error.message ?? 'Unknown error');
   return data ?? [];
 }
 
@@ -358,7 +358,7 @@ export async function fetchAssignableUsers(): Promise<Pick<import('../../types')
     .select('id, email, full_name')
     .in('role', ['coordinator', 'admin', 'cell_leader', 'member'])
     .order('full_name', { ascending: true });
-  if (error) throw error;
+  if (error) throw new Error(error.message ?? 'Unknown error');
   return data ?? [];
 }
 

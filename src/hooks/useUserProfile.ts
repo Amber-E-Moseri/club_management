@@ -75,11 +75,15 @@ export function useUserProfile(userId: string | undefined): UseUserProfileReturn
       .eq('user_id', userId)
       .single()
       .then(({ data, error: err }) => {
-        if (err && err.code !== 'PGRST116') {
-          setError(err.message);
+        // PGRST116 = row not found; PGRST205 / 42P01 = table doesn't exist yet.
+        // Any of these fall through to the profiles-only fallback below.
+        const isFatal = err && err.code !== 'PGRST116' && err.code !== 'PGRST205' && err.code !== '42P01';
+        if (isFatal) {
+          setError(err!.message);
           setLoading(false);
           return;
         }
+        if (err) data = null;
         if (!data) {
           // Profile row not yet created — fetch base profile only
           supabase
@@ -143,7 +147,7 @@ export function useUserProfile(userId: string | undefined): UseUserProfileReturn
             student_number: payload.studentNumber ?? null,
             updated_at: new Date().toISOString(),
           });
-        if (err) throw err;
+        if (err) throw new Error(err.message);
         refetch();
       } catch (e) {
         setError(e instanceof Error ? e.message : 'Save failed.');
@@ -161,7 +165,7 @@ export function useUserProfile(userId: string | undefined): UseUserProfileReturn
       const ext = file.name.split('.').pop();
       const path = `avatars/${userId}.${ext}`;
       const { error: err } = await supabase.storage.from('user-media').upload(path, file, { upsert: true });
-      if (err) throw err;
+      if (err) throw new Error(err.message);
       const { data } = supabase.storage.from('user-media').getPublicUrl(path);
       return data.publicUrl;
     },

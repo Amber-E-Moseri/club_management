@@ -15,7 +15,7 @@ export async function updateMeetingWithZoom(
       zoom_created: zoomData.zoom_created,
     })
     .eq('id', meetingId);
-  if (error) throw error;
+  if (error) throw new Error(error.message ?? 'Unknown error');
 }
 
 export async function fetchZoomSettings(): Promise<ZoomSettings | null> {
@@ -24,7 +24,7 @@ export async function fetchZoomSettings(): Promise<ZoomSettings | null> {
     .select('*')
     .limit(1)
     .maybeSingle();
-  if (error) throw error;
+  if (error) throw new Error(error.message ?? 'Unknown error');
   return data;
 }
 
@@ -39,7 +39,7 @@ export async function upsertZoomSettings(
       .eq('id', existing.id)
       .select()
       .single();
-    if (error) throw error;
+    if (error) throw new Error(error.message ?? 'Unknown error');
     return data;
   }
   const { data, error } = await supabase
@@ -47,7 +47,7 @@ export async function upsertZoomSettings(
     .insert(patch)
     .select()
     .single();
-  if (error) throw error;
+  if (error) throw new Error(error.message ?? 'Unknown error');
   return data;
 }
 
@@ -60,7 +60,7 @@ export async function createZoomAttendance(
   const { error } = await supabase
     .from('zoom_attendance')
     .upsert(records.map((r) => ({ ...r, meeting_id: meetingId })));
-  if (error) throw error;
+  if (error) throw new Error(error.message ?? 'Unknown error');
 }
 
 export async function fetchZoomAttendance(meetingId: string): Promise<ZoomAttendance[]> {
@@ -69,7 +69,7 @@ export async function fetchZoomAttendance(meetingId: string): Promise<ZoomAttend
     .select('*')
     .eq('meeting_id', meetingId)
     .order('join_time', { ascending: true });
-  if (error) throw error;
+  if (error) throw new Error(error.message ?? 'Unknown error');
   return data ?? [];
 }
 
@@ -101,5 +101,5 @@ export async function deleteZoomAttendance(meetingId: string): Promise<void> {
     .from('zoom_attendance')
     .delete()
     .eq('meeting_id', meetingId);
-  if (error) throw error;
+  if (error) throw new Error(error.message ?? 'Unknown error');
 }

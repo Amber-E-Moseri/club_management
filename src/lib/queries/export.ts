@@ -2,6 +2,8 @@ import { supabase } from '../supabase';
 import type { ContactFilters } from '../../types';
 import { fetchContacts } from './contacts';
 
+export type MemberExportStatus = 'all' | 'active' | 'archived';
+
 function csvValue(value: string | number | boolean | null | undefined): string {
   const raw = value == null ? '' : String(value);
   return `"${raw.replace(/"/g, '""')}"`;
@@ -17,21 +19,32 @@ export function downloadCSV(filename: string, csv: string): void {
   URL.revokeObjectURL(url);
 }
 
-export async function exportMembersCSV(): Promise<string> {
-  const { data, error } = await supabase
+export async function exportMembersCSV(status: MemberExportStatus = 'all'): Promise<string> {
+  let query = supabase
     .from('profiles')
-    .select('full_name,email,role,joined_at,cell_id')
-    .order('full_name', { ascending: true });
-  if (error) throw error;
+    .select('id,full_name,email,student_number,role,status,cell_id,avatar_url,joined_at');
+
+  if (status === 'active') {
+    query = query.eq('status', 'active');
+  } else if (status === 'archived') {
+    query = query.neq('status', 'active');
+  }
+
+  const { data, error } = await query.order('full_name', { ascending: true });
+  if (error) throw new Error(error.message ?? 'Unknown error');
 
   return [
-    ['Name', 'Email', 'Role', 'Joined At', 'Cell'].join(','),
+    ['ID', 'Name', 'Email', 'Student Number', 'Role', 'Status', 'Cell', 'Avatar URL', 'Joined At'].join(','),
     ...((data ?? []) as any[]).map((row) => [
+      csvValue(row.id),
       csvValue(row.full_name),
       csvValue(row.email),
+      csvValue(row.student_number),
       csvValue(row.role),
-      csvValue(row.joined_at),
+      csvValue(row.status ?? 'active'),
       csvValue(row.cell_id),
+      csvValue(row.avatar_url),
+      csvValue(row.joined_at),
     ].join(',')),
   ].join('\n');
 }
@@ -58,7 +71,7 @@ export async function exportMeetingAttendanceCSV(meetingId: string): Promise<str
     .select('user_name,user_id,confirmed_at,attended')
     .eq('meeting_id', meetingId)
     .order('confirmed_at', { ascending: true });
-  if (error) throw error;
+  if (error) throw new Error(error.message ?? 'Unknown error');
 
   return [
     ['Name', 'User ID', 'Confirmed At', 'Attended'].join(','),

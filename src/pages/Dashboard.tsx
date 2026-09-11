@@ -43,7 +43,7 @@ export const Dashboard: React.FC<DashboardProps> = ({ user }) => {
   const isAdmin = role === 'admin' || role === 'coordinator';
   const isCellLeader = role === 'cell_leader';
   const isMember = role === 'member';
-  const firstName = user?.name.split(' ')[0] ?? 'there';
+  const firstName = user?.name?.split(' ')[0] ?? 'there';
   const today = format(new Date(), 'EEEE, MMMM d, yyyy');
   const doneHabits = habitsWithStats.filter((h) => h.today_status === 'done').length;
   const topHabits = habitsWithStats.slice(0, 3);

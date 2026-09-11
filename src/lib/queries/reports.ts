@@ -92,7 +92,7 @@ export async function fetchContactActivityReport(filters?: {
   if (filters?.date_to) query = query.lte('date_contacted', filters.date_to);
 
   const { data, error } = await query.eq('archived', false);
-  if (error) throw error;
+  if (error) throw new Error(error.message ?? 'Unknown error');
 
   const rows = data ?? [];
 

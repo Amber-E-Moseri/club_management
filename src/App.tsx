@@ -30,8 +30,10 @@ import { PushPermissionPrompt } from './components/feature/PushPermissionPrompt'
 import { usePushNotifications } from './hooks/usePushNotifications';
 import { PendingApproval } from './pages/PendingApproval';
 import { AdminPendingApprovals } from './pages/AdminPendingApprovals';
+import { useTheme } from './hooks/useTheme';
 
 function AppShell() {
+  useTheme();
   const { user, loading, error, signIn, signUp, signOut } = useAuth();
   const { subscribe } = usePushNotifications(user?.id);
   const [showPushPrompt, setShowPushPrompt] = useState(true);

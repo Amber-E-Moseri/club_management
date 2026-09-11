@@ -22,7 +22,7 @@ export async function createPushSubscription(
     )
     .select()
     .single();
-  if (error) throw error;
+  if (error) throw new Error(error.message ?? 'Unknown error');
   return data;
 }
 
@@ -31,12 +31,12 @@ export async function updatePushSubscription(id: string, lastUsed: string): Prom
     .from('push_subscriptions')
     .update({ last_used: lastUsed })
     .eq('id', id);
-  if (error) throw error;
+  if (error) throw new Error(error.message ?? 'Unknown error');
 }
 
 export async function deletePushSubscription(id: string): Promise<void> {
   const { error } = await supabase.from('push_subscriptions').delete().eq('id', id);
-  if (error) throw error;
+  if (error) throw new Error(error.message ?? 'Unknown error');
 }
 
 export async function fetchPushSubscriptions(memberId: string): Promise<PushSubscriptionRecord[]> {
@@ -46,7 +46,7 @@ export async function fetchPushSubscriptions(memberId: string): Promise<PushSubs
     .eq('member_id', memberId)
     .eq('is_active', true)
     .order('subscribed_at', { ascending: false });
-  if (error) throw error;
+  if (error) throw new Error(error.message ?? 'Unknown error');
   return data ?? [];
 }
 
@@ -64,7 +64,7 @@ export async function createPushLog(input: PushLogInput): Promise<PushNotificati
     .insert(input)
     .select()
     .single();
-  if (error) throw error;
+  if (error) throw new Error(error.message ?? 'Unknown error');
   return data;
 }
 
@@ -82,7 +82,7 @@ export async function fetchPushLog(
   if (filter?.type) q = q.eq('notification_type', filter.type);
 
   const { data, error } = await q;
-  if (error) throw error;
+  if (error) throw new Error(error.message ?? 'Unknown error');
   return data ?? [];
 }
 
@@ -95,5 +95,5 @@ export async function deactivateOldSubscriptions(): Promise<void> {
     .update({ is_active: false })
     .lt('last_used', cutoff.toISOString())
     .eq('is_active', true);
-  if (error) throw error;
+  if (error) throw new Error(error.message ?? 'Unknown error');
 }

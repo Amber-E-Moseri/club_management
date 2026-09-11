@@ -69,6 +69,14 @@ export const ContactLogging: React.FC<Props> = ({ user }) => {
     setMoveOpen(true);
   }, []);
 
+  if (!manage) {
+    return (
+      <div className="flex-1 p-8 flex items-center justify-center">
+        <p className="text-sm text-red-600 font-medium">Access denied.</p>
+      </div>
+    );
+  }
+
   const handleAdd = () => {
     setEditing(null);
     setFormOpen(true);

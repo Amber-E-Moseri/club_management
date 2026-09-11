@@ -54,18 +54,11 @@ export async function getEnhancedDashboardStats(
     supabase.from('devotional_views').select('id', { count: 'exact', head: true }).eq('member_id', userId).gte('viewed_date', start).lte('viewed_date', end),
   ]);
 
-  [
-    members.error,
-    newMembers.error,
-    meetings.error,
-    announcements.error,
-    prayers.error,
-    testimonies.error,
-    contacts.error,
-    personalHabits.error,
-    devotionalViews.error,
-  ].forEach((error) => {
-    if (error) throw error;
+  // Only throw for errors on tables we know must exist (profiles, meetings, contacts, testimonies).
+  // Optional tables (announcements, habit_entries, devotional_views) may not be migrated yet —
+  // those queries return null data which falls back to 0 below.
+  [members.error, newMembers.error, meetings.error, testimonies.error, contacts.error].forEach((error) => {
+    if (error) throw new Error(error.message);
   });
 
   const contactRows = contacts.data ?? [];
@@ -112,8 +105,9 @@ export async function getRecentActivity(
       : supabase.from('contacts').select('id,contact_name,created_at,logged_by').eq('archived', false).eq('logged_by', userId).order('created_at', { ascending: false }).limit(limit),
   ]);
 
-  [announcements.error, testimonies.error, meetings.error, contacts.error].forEach((error) => {
-    if (error) throw error;
+  // Silently skip missing optional tables — activity feed shows partial data gracefully
+  [testimonies.error, meetings.error, contacts.error].forEach((error) => {
+    if (error) throw new Error(error.message);
   });
 
   return [
@@ -171,7 +165,7 @@ export async function getUpcomingMeetings(
   }
 
   const { data, error } = await query;
-  if (error) throw error;
+  if (error) throw new Error(error.message ?? 'Unknown error');
 
   return (data ?? []).map((row: Record<string, any>) => ({
     ...(row as Meeting),

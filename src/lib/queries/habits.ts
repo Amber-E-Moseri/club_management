@@ -11,7 +11,7 @@ export async function fetchHabitTemplates(): Promise<HabitTemplate[]> {
     .select('*')
     .eq('is_active', true)
     .order('order');
-  if (error) throw error;
+  if (error) throw new Error(error.message);
   return data ?? [];
 }
 
@@ -20,7 +20,7 @@ export async function fetchAllHabitTemplates(): Promise<HabitTemplate[]> {
     .from('habit_templates')
     .select('*')
     .order('order');
-  if (error) throw error;
+  if (error) throw new Error(error.message);
   return data ?? [];
 }
 
@@ -40,7 +40,7 @@ export async function createHabitTemplate(
     .insert({ ...input, created_by: userId, is_active: true, order: (last?.order ?? 0) + 1 })
     .select()
     .single();
-  if (error) throw error;
+  if (error) throw new Error(error.message);
   return data;
 }
 
@@ -54,13 +54,13 @@ export async function updateHabitTemplate(
     .eq('id', id)
     .select()
     .single();
-  if (error) throw error;
+  if (error) throw new Error(error.message);
   return data;
 }
 
 export async function deleteHabitTemplate(id: string): Promise<void> {
   const { error } = await supabase.from('habit_templates').delete().eq('id', id);
-  if (error) throw error;
+  if (error) throw new Error(error.message);
 }
 
 export async function fetchHabitEntries(
@@ -75,7 +75,7 @@ export async function fetchHabitEntries(
     .gte('entry_date', dateFrom)
     .lte('entry_date', dateTo)
     .order('entry_date');
-  if (error) throw error;
+  if (error) throw new Error(error.message);
   return data ?? [];
 }
 
@@ -93,7 +93,7 @@ export async function upsertHabitEntry(
     )
     .select()
     .single();
-  if (error) throw error;
+  if (error) throw new Error(error.message);
   return data;
 }
 
@@ -108,7 +108,7 @@ export async function deleteHabitEntry(
     .eq('user_id', userId)
     .eq('template_id', templateId)
     .eq('entry_date', entryDate);
-  if (error) throw error;
+  if (error) throw new Error(error.message);
 }
 
 export async function fetchHabitAnalytics(): Promise<HabitMemberAnalytics[]> {
@@ -124,7 +124,7 @@ export async function fetchHabitAnalytics(): Promise<HabitMemberAnalytics[]> {
       .lte('entry_date', today),
   ]);
 
-  if (entriesResult.error) throw entriesResult.error;
+  if (entriesResult.error) throw new Error(entriesResult.error.message);
   const allEntries = entriesResult.data ?? [];
 
   return templates.map((t) => {

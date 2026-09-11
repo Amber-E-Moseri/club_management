@@ -15,6 +15,7 @@ export const Announcements: React.FC<AnnouncementsProps> = ({ user }) => {
   const [title, setTitle] = useState('');
   const [body, setBody] = useState('');
   const [saving, setSaving] = useState(false);
+  const [postError, setPostError] = useState<string | null>(null);
 
   useEffect(() => {
     getAnnouncements(20).then(setItems).catch(console.error).finally(() => setLoading(false));
@@ -23,13 +24,19 @@ export const Announcements: React.FC<AnnouncementsProps> = ({ user }) => {
   async function handlePost() {
     if (!user || !title.trim() || !body.trim()) return;
     setSaving(true);
-    await createAnnouncement(title, body, user.id, user.name);
-    const fresh = await getAnnouncements(20);
-    setItems(fresh);
-    setTitle('');
-    setBody('');
-    setShowForm(false);
-    setSaving(false);
+    setPostError(null);
+    try {
+      await createAnnouncement(title, body, user.id, user.name);
+      const fresh = await getAnnouncements(20);
+      setItems(fresh);
+      setTitle('');
+      setBody('');
+      setShowForm(false);
+    } catch (e) {
+      setPostError(e instanceof Error ? e.message : 'Failed to post.');
+    } finally {
+      setSaving(false);
+    }
   }
 
   const canPost = user?.role === 'admin' || user?.role === 'coordinator' || user?.role === 'cell_leader';
@@ -50,6 +57,11 @@ export const Announcements: React.FC<AnnouncementsProps> = ({ user }) => {
           <div className="card mb-6 space-y-3">
             <Input label="Title" value={title} onChange={setTitle} />
             <Input label="Message" type="textarea" value={body} onChange={setBody} />
+            {postError && (
+              <div className="rounded-md border border-red-200 bg-red-50 px-4 py-3 text-sm text-red-700" role="alert">
+                {postError}
+              </div>
+            )}
             <Button onClick={handlePost} loading={saving}>Post Announcement</Button>
           </div>
         )}

@@ -11,7 +11,7 @@ export async function getUpcomingEvents(limit = 3): Promise<Event[]> {
     .gte('date', today)
     .order('date', { ascending: true })
     .limit(limit);
-  if (error) throw error;
+  if (error) throw new Error(error.message);
   return data ?? [];
 }
 
@@ -20,7 +20,7 @@ export async function getAllEvents(): Promise<Event[]> {
     .from('events')
     .select('*')
     .order('date', { ascending: true });
-  if (error) throw error;
+  if (error) throw new Error(error.message);
   return data ?? [];
 }
 
@@ -28,7 +28,7 @@ export async function rsvpEvent(eventId: string, userId: string): Promise<void> 
   const { error } = await supabase
     .from('event_rsvps')
     .upsert({ event_id: eventId, user_id: userId });
-  if (error) throw error;
+  if (error) throw new Error(error.message);
 }
 
 export async function cancelRsvp(eventId: string, userId: string): Promise<void> {
@@ -36,7 +36,7 @@ export async function cancelRsvp(eventId: string, userId: string): Promise<void>
     .from('event_rsvps')
     .delete()
     .match({ event_id: eventId, user_id: userId });
-  if (error) throw error;
+  if (error) throw new Error(error.message);
 }
 
 // ─── Members ─────────────────────────────────────────────────────────────────
@@ -46,7 +46,7 @@ export async function getMembers(): Promise<Member[]> {
     .from('profiles')
     .select('*')
     .order('full_name', { ascending: true });
-  if (error) throw error;
+  if (error) throw new Error(error.message);
   return data ?? [];
 }
 
@@ -58,7 +58,7 @@ export async function getAnnouncements(limit = 5): Promise<Announcement[]> {
     .select('*')
     .order('created_at', { ascending: false })
     .limit(limit);
-  if (error) throw error;
+  if (error) throw new Error(error.message);
   return data ?? [];
 }
 
@@ -71,7 +71,7 @@ export async function createAnnouncement(
   const { error } = await supabase
     .from('announcements')
     .insert({ title, body, author_id: authorId, author_name: authorName });
-  if (error) throw error;
+  if (error) throw new Error(error.message);
 }
 
 // ─── Prayer Requests ─────────────────────────────────────────────────────────
@@ -82,7 +82,7 @@ export async function getPrayerRequests(): Promise<PrayerRequest[]> {
     .select('*')
     .eq('is_active', true)
     .order('created_at', { ascending: false });
-  if (error) throw error;
+  if (error) throw new Error(error.message);
   return data ?? [];
 }
 

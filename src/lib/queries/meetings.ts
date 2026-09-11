@@ -14,7 +14,7 @@ export async function fetchMeetings(upcoming = true): Promise<Meeting[]> {
   if (upcoming) q = q.gte('date', today);
 
   const { data, error } = await q;
-  if (error) throw error;
+  if (error) throw new Error(error.message);
 
   return (data ?? []).map((row: Record<string, unknown>) => {
     const attendances = (row.meeting_attendances as { user_id: string }[]) ?? [];
@@ -29,7 +29,7 @@ export async function fetchMeetings(upcoming = true): Promise<Meeting[]> {
 export async function fetchMeeting(id: string): Promise<Meeting | null> {
   const { data, error } = await supabase
     .from('meetings').select('*').eq('id', id).single();
-  if (error) throw error;
+  if (error) throw new Error(error.message);
   return data;
 }
 
@@ -38,7 +38,7 @@ export async function createMeeting(
 ): Promise<Meeting> {
   const { data, error } = await supabase
     .from('meetings').insert(input).select().single();
-  if (error) throw error;
+  if (error) throw new Error(error.message);
   return data;
 }
 
@@ -48,13 +48,13 @@ export async function updateMeeting(
 ): Promise<Meeting> {
   const { data, error } = await supabase
     .from('meetings').update(input).eq('id', id).select().single();
-  if (error) throw error;
+  if (error) throw new Error(error.message);
   return data;
 }
 
 export async function deleteMeeting(id: string): Promise<void> {
   const { error } = await supabase.from('meetings').delete().eq('id', id);
-  if (error) throw error;
+  if (error) throw new Error(error.message);
 }
 
 export async function confirmAttendance(
@@ -65,7 +65,7 @@ export async function confirmAttendance(
   const { error } = await supabase
     .from('meeting_attendances')
     .upsert({ meeting_id: meetingId, user_id: userId, user_name: userName });
-  if (error) throw error;
+  if (error) throw new Error(error.message);
 }
 
 export async function cancelAttendance(meetingId: string, userId: string): Promise<void> {
@@ -73,7 +73,7 @@ export async function cancelAttendance(meetingId: string, userId: string): Promi
     .from('meeting_attendances')
     .delete()
     .match({ meeting_id: meetingId, user_id: userId });
-  if (error) throw error;
+  if (error) throw new Error(error.message);
 }
 
 export async function fetchAttendances(meetingId: string): Promise<MeetingAttendance[]> {
@@ -82,7 +82,7 @@ export async function fetchAttendances(meetingId: string): Promise<MeetingAttend
     .select('*')
     .eq('meeting_id', meetingId)
     .order('confirmed_at', { ascending: true });
-  if (error) throw error;
+  if (error) throw new Error(error.message);
   return data ?? [];
 }
 
@@ -95,5 +95,5 @@ export async function markAttended(
     .from('meeting_attendances')
     .update({ attended })
     .match({ meeting_id: meetingId, user_id: userId });
-  if (error) throw error;
+  if (error) throw new Error(error.message);
 }

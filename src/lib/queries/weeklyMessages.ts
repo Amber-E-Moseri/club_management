@@ -38,7 +38,7 @@ export async function fetchCurrentWeekOrgMessage(): Promise<WeeklyMessage | null
     .order('created_at', { ascending: false })
     .limit(1)
     .maybeSingle();
-  if (error) throw error;
+  if (error) throw new Error(error.message);
   return data;
 }
 
@@ -66,7 +66,7 @@ export async function fetchMonthMessages(
   }
 
   const { data, error } = await query;
-  if (error) throw error;
+  if (error) throw new Error(error.message);
   return data ?? [];
 }
 
@@ -89,7 +89,7 @@ export async function fetchWeekMessages(
   }
 
   const { data, error } = await query;
-  if (error) throw error;
+  if (error) throw new Error(error.message);
   return data ?? [];
 }
 
@@ -120,7 +120,7 @@ export async function createWeeklyMessage(
     .from('weekly_messages')
     .insert(rows)
     .select();
-  if (error) throw error;
+  if (error) throw new Error(error.message);
   return data ?? [];
 }
 
@@ -134,11 +134,11 @@ export async function updateWeeklyMessage(
     .eq('id', id)
     .select()
     .single();
-  if (error) throw error;
+  if (error) throw new Error(error.message);
   return data;
 }
 
 export async function deleteWeeklyMessage(id: string): Promise<void> {
   const { error } = await supabase.from('weekly_messages').delete().eq('id', id);
-  if (error) throw error;
+  if (error) throw new Error(error.message);
 }

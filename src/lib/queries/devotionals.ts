@@ -39,7 +39,7 @@ export async function getMonthlyDevotional(month: number, year?: number): Promis
     .limit(1)
     .maybeSingle();
 
-  if (error) throw error;
+  if (error) throw new Error(error.message ?? 'Unknown error');
   return data ?? null;
 }
 
@@ -58,7 +58,7 @@ export async function getDevotionalByDay(
     .eq('day_of_month', day)
     .maybeSingle();
 
-  if (error) throw error;
+  if (error) throw new Error(error.message ?? 'Unknown error');
   if (!data) return null;
   return { devotional, page: data };
 }
@@ -70,7 +70,7 @@ export async function getAllPages(devotionalId: string): Promise<DevotionalDaily
     .eq('devotional_id', devotionalId)
     .order('day_of_month', { ascending: true });
 
-  if (error) throw error;
+  if (error) throw new Error(error.message ?? 'Unknown error');
   return data ?? [];
 }
 
@@ -100,7 +100,7 @@ export async function createDevotional(data: CreateDevotionalInput): Promise<Mon
     .select('*')
     .single();
 
-  if (error) throw error;
+  if (error) throw new Error(error.message ?? 'Unknown error');
   return row;
 }
 
@@ -117,7 +117,7 @@ export async function createDailyPage(data: CreateDailyPageInput): Promise<Devot
     .select('*')
     .single();
 
-  if (error) throw error;
+  if (error) throw new Error(error.message ?? 'Unknown error');
   return row;
 }
 
@@ -142,7 +142,7 @@ export async function logView(
     .select('*')
     .single();
 
-  if (error) throw error;
+  if (error) throw new Error(error.message ?? 'Unknown error');
   return data;
 }
 
@@ -161,7 +161,7 @@ export async function getViewForDay(
     .eq('viewed_date', viewedDate)
     .maybeSingle();
 
-  if (error) throw error;
+  if (error) throw new Error(error.message ?? 'Unknown error');
   return data ?? null;
 }
 
@@ -175,7 +175,7 @@ export async function getEngagementStats(
     .eq('devotional_id', devotionalId)
     .eq('day_of_month', dayOfMonth);
 
-  if (error) throw error;
+  if (error) throw new Error(error.message ?? 'Unknown error');
 
   const { data: latest, error: latestError } = await supabase
     .from('devotional_views')
@@ -203,6 +203,6 @@ export async function listDevotionals(year: number): Promise<MonthlyDevotional[]
     .eq('year', year)
     .order('month', { ascending: true });
 
-  if (error) throw error;
+  if (error) throw new Error(error.message ?? 'Unknown error');
   return data ?? [];
 }

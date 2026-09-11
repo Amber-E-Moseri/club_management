@@ -54,7 +54,7 @@ export function useAuth() {
   }
 
   const signIn = useCallback(async (email: string, password: string) => {
-    setState((s) => ({ ...s, loading: true, error: null }));
+    setState((s) => ({ ...s, error: null }));
     try {
       await signInWithEmail(email, password);
       // onAuthStateChange will call loadProfile
@@ -70,10 +70,9 @@ export function useAuth() {
     fullName: string,
     studentNumber?: string,
   ): Promise<boolean> => {
-    setState((s) => ({ ...s, loading: true, error: null }));
+    setState((s) => ({ ...s, error: null }));
     try {
       await signUpWithEmail(email, password, fullName, studentNumber);
-      setState((s) => ({ ...s, loading: false }));
       return true;
     } catch (e) {
       const msg = e instanceof AuthError ? e.message : 'Sign-up failed.';

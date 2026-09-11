@@ -7,7 +7,7 @@ export async function fetchEmailPreferences(memberId: string): Promise<EmailPref
     .select('*')
     .eq('member_id', memberId)
     .maybeSingle();
-  if (error) throw error;
+  if (error) throw new Error(error.message ?? 'Unknown error');
   return data;
 }
 
@@ -20,7 +20,7 @@ export async function upsertEmailPreferences(
     .upsert({ member_id: memberId, ...prefs }, { onConflict: 'member_id' })
     .select()
     .single();
-  if (error) throw error;
+  if (error) throw new Error(error.message ?? 'Unknown error');
   return data;
 }
 
@@ -38,7 +38,7 @@ export async function createEmailLog(input: EmailLogInput): Promise<EmailLog> {
     .insert({ ...input, status: input.status ?? 'queued' })
     .select()
     .single();
-  if (error) throw error;
+  if (error) throw new Error(error.message ?? 'Unknown error');
   return data;
 }
 
@@ -56,7 +56,7 @@ export async function updateEmailLog(
       ...(patch.clickedAt !== undefined ? { clicked_at: patch.clickedAt } : {}),
     })
     .eq('id', id);
-  if (error) throw error;
+  if (error) throw new Error(error.message ?? 'Unknown error');
 }
 
 export interface EmailLogFilters {
@@ -79,7 +79,7 @@ export async function fetchEmailLog(filters: EmailLogFilters = {}): Promise<Emai
   if (filters.dateTo) q = q.lte('created_at', filters.dateTo);
 
   const { data, error } = await q;
-  if (error) throw error;
+  if (error) throw new Error(error.message ?? 'Unknown error');
   return data ?? [];
 }
 
@@ -96,7 +96,7 @@ export async function createScheduledEmail(input: ScheduledEmailInput): Promise<
     .insert(input)
     .select()
     .single();
-  if (error) throw error;
+  if (error) throw new Error(error.message ?? 'Unknown error');
   return data;
 }
 
@@ -108,7 +108,7 @@ export async function fetchPendingScheduledEmails(now = new Date().toISOString()
     .lte('scheduled_for', now)
     .order('scheduled_for', { ascending: true })
     .limit(100);
-  if (error) throw error;
+  if (error) throw new Error(error.message ?? 'Unknown error');
   return data ?? [];
 }
 
@@ -117,7 +117,7 @@ export async function markScheduledEmailSent(id: string, sentAt = new Date().toI
     .from('scheduled_emails')
     .update({ sent: true, sent_at: sentAt })
     .eq('id', id);
-  if (error) throw error;
+  if (error) throw new Error(error.message ?? 'Unknown error');
 }
 
 export async function fetchFailedEmailLogs(): Promise<EmailLog[]> {
@@ -132,5 +132,5 @@ export async function deleteOldEmailLogs(olderThanDays = 90): Promise<void> {
     .from('email_log')
     .delete()
     .lt('created_at', cutoff.toISOString());
-  if (error) throw error;
+  if (error) throw new Error(error.message ?? 'Unknown error');
 }

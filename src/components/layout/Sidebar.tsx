@@ -1,30 +1,35 @@
 import React from 'react';
 import { useNavigate, useLocation } from 'react-router-dom';
+import {
+  BookMarked, BookOpen, Calendar, CalendarDays, ClipboardList,
+  Download, Flame, Library, LayoutDashboard, Mail, MailOpen,
+  Megaphone, MessageSquare, Settings, Star, User, Users,
+  type LucideIcon,
+} from 'lucide-react';
 import { cn } from '../../lib/utils';
 import type { AuthUser } from '../../lib/auth';
 import { GlobalSearch } from '../feature/GlobalSearch';
 import { useTheme } from '../../hooks/useTheme';
 import { useTranslation } from '../../i18n';
 
-const NAV_ITEMS = [
-  { label: 'Dashboard',     path: '/',             icon: '🏠', minRole: 0 },
-  { label: 'Events',        path: '/events',        icon: '📅', minRole: 0 },
-  { label: 'Announcements', path: '/announcements', icon: '📢', minRole: 0 },
-  { label: 'Meetings',      path: '/meetings',      icon: '🗓️', minRole: 0 },
-  { label: 'Messages',      path: '/messages',      icon: '📝', minRole: 0 },
-  { label: 'Habits',        path: '/habits',        icon: '🔥', minRole: 0 },
-  { label: 'Confessions',   path: '/confessions',   icon: '📖', minRole: 0 },
-  { label: 'Testimonies',   path: '/testimonies',   icon: '✨', minRole: 0 },
-  { label: 'Devotionals',   path: '/devotionals',   icon: '📕', minRole: 0 },
-  { label: 'Daily Bread',   path: '/devotionals',   icon: 'DB', minRole: 0 },
-  { label: 'Book of Month', path: '/books',          icon: '📚', minRole: 0 },
-  { label: 'CRM / Contacts',path: '/contacts',      icon: '📋', minRole: 1 }, // cell_leader+
-  { label: 'Members',       path: '/members',       icon: '👥', minRole: 1 },
-  { label: 'Profile',            path: '/profile',            icon: '👤', minRole: 0 },
-  { label: 'Email Preferences', path: '/email-preferences',  icon: '✉️', minRole: 0 },
-  { label: 'Data Export',       path: '/admin/exports',      icon: 'EX', minRole: 2 },
-  { label: 'Email Log',         path: '/admin/email-log',    icon: 'EL', minRole: 2 },
-  { label: 'Admin Panel',       path: '/admin',              icon: '⚙️', minRole: 2 }, // admin+
+const NAV_ITEMS: { label: string; path: string; icon: LucideIcon; minRole: number }[] = [
+  { label: 'Dashboard',        path: '/',                   icon: LayoutDashboard, minRole: 0 },
+  { label: 'Events',           path: '/events',             icon: CalendarDays,    minRole: 0 },
+  { label: 'Announcements',    path: '/announcements',      icon: Megaphone,       minRole: 0 },
+  { label: 'Meetings',         path: '/meetings',           icon: Calendar,        minRole: 0 },
+  { label: 'Messages',         path: '/messages',           icon: MessageSquare,   minRole: 0 },
+  { label: 'Habits',           path: '/habits',             icon: Flame,           minRole: 0 },
+  { label: 'Confessions',      path: '/confessions',        icon: BookOpen,        minRole: 0 },
+  { label: 'Testimonies',      path: '/testimonies',        icon: Star,            minRole: 0 },
+  { label: 'Daily Bread',      path: '/devotionals',        icon: BookMarked,      minRole: 0 },
+  { label: 'Book of Month',    path: '/books',              icon: Library,         minRole: 0 },
+  { label: 'CRM / Contacts',   path: '/contacts',           icon: ClipboardList,   minRole: 1 },
+  { label: 'Members',          path: '/members',            icon: Users,           minRole: 1 },
+  { label: 'Profile',          path: '/profile',            icon: User,            minRole: 0 },
+  { label: 'Email Preferences',path: '/email-preferences',  icon: Mail,            minRole: 0 },
+  { label: 'Data Export',      path: '/admin/exports',      icon: Download,        minRole: 2 },
+  { label: 'Email Log',        path: '/admin/email-log',    icon: MailOpen,        minRole: 2 },
+  { label: 'Admin Panel',      path: '/admin',              icon: Settings,        minRole: 2 },
 ];
 
 const ROLE_LEVEL: Record<AuthUser['role'], number> = {
@@ -55,13 +60,13 @@ export const Sidebar: React.FC<SidebarProps> = ({
   return (
     <aside
       className={cn(
-        'shrink-0 bg-white border-r border-gray-200 flex flex-col h-screen sticky top-0 z-20',
+        'shrink-0 bg-white border-r border-gray-200 flex flex-col h-screen sticky top-0 z-20 dark:border-slate-700 dark:bg-slate-900',
         'transition-[width] duration-200 ease-in-out',
         collapsed ? 'w-16' : 'w-56'
       )}
     >
       {/* Logo */}
-      <div className={cn('border-b border-gray-100', collapsed ? 'px-3 py-5' : 'px-5 py-5')}>
+      <div className={cn('border-b border-gray-100 dark:border-slate-700', collapsed ? 'px-3 py-5' : 'px-5 py-5')}>
         {collapsed ? (
           <div className="flex flex-col items-center gap-2">
             <img src="/logo.png" alt="BLW York" className="w-8 h-8 object-contain" />
@@ -74,7 +79,7 @@ export const Sidebar: React.FC<SidebarProps> = ({
             <div className="flex items-center gap-2">
               <img src="/logo.png" alt="BLW York" className="w-8 h-8 rounded-md shrink-0" />
               <div>
-                <p className="text-sm font-bold text-gray-900 leading-tight">BLW York Hub</p>
+              <p className="text-sm font-bold text-gray-900 leading-tight dark:text-slate-100">BLW York Hub</p>
                 <p className="text-xs text-gray-400">York University</p>
               </div>
             </div>
@@ -117,11 +122,11 @@ export const Sidebar: React.FC<SidebarProps> = ({
                 'flex items-center rounded-md text-sm font-medium w-full transition-colors duration-150',
                 collapsed ? 'justify-center h-10 w-10 mx-auto' : 'gap-3 px-4 py-2.5',
                 active
-                  ? 'bg-red-50 text-york-600 font-semibold'
-                  : 'text-gray-500 hover:bg-gray-100 hover:text-gray-900'
+                  ? 'bg-red-50 text-york-600 font-semibold dark:bg-york-900/30 dark:text-york-300'
+                  : 'text-gray-500 hover:bg-gray-100 hover:text-gray-900 dark:text-slate-300 dark:hover:bg-slate-800 dark:hover:text-slate-100'
               )}
             >
-              <span>{item.icon}</span>
+              <item.icon className="w-4 h-4 shrink-0" />
               {!collapsed && <span>{t(item.label.toLowerCase().replace(/ \/ /g, '_').replace(/\s+/g, '_'))}</span>}
             </button>
           );
@@ -130,7 +135,7 @@ export const Sidebar: React.FC<SidebarProps> = ({
 
       {/* User footer */}
       {user && (
-        <div className={cn('border-t border-gray-100', collapsed ? 'px-2 py-3' : 'px-4 py-4')}>
+        <div className={cn('border-t border-gray-100 dark:border-slate-700', collapsed ? 'px-2 py-3' : 'px-4 py-4')}>
           {collapsed ? (
             <div className="flex flex-col items-center gap-2">
               <div className="w-8 h-8 rounded-full bg-york-600 text-white flex items-center justify-center text-xs font-bold">
@@ -145,7 +150,7 @@ export const Sidebar: React.FC<SidebarProps> = ({
                   {getInitials(user.name)}
                 </div>
                 <div className="min-w-0 flex-1">
-                  <p className="text-sm font-semibold text-gray-900 truncate">{user.name}</p>
+                  <p className="text-sm font-semibold text-gray-900 truncate dark:text-slate-100">{user.name}</p>
                   <span className="text-xs px-2 py-0.5 rounded-full bg-york-100 text-york-700 font-semibold capitalize">
                     {user.role.replace('_', ' ')}
                   </span>

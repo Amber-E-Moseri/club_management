@@ -244,6 +244,9 @@ create table if not exists public.meetings (
   zoom_link      text,
   visibility     text not null default 'public'
                  check (visibility in ('public','leaders','cell','explicit')),
+  category       text not null default 'general'
+                 check (category in ('general','bsc','cell','leadership')),
+  allow_join_requests boolean not null default false,
   cell_id        uuid references public.cells(id),
   created_by     uuid not null references public.profiles(id),
   reminder_sent  boolean not null default false,

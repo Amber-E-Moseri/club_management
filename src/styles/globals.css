@@ -30,12 +30,12 @@
     @apply scroll-smooth;
   }
   body {
-    @apply bg-gray-100 text-gray-600 font-sans;
+    @apply bg-gray-100 text-gray-600 font-sans dark:bg-slate-950 dark:text-slate-300;
     font-size: 16px;
   }
-  h1 { @apply text-h1 font-bold text-gray-900; }
-  h2 { @apply text-h2 font-bold text-gray-900; }
-  h3 { @apply text-h3 font-bold text-gray-900; }
+  h1 { @apply text-h1 font-bold text-gray-900 dark:text-slate-100; }
+  h2 { @apply text-h2 font-bold text-gray-900 dark:text-slate-100; }
+  h3 { @apply text-h3 font-bold text-gray-900 dark:text-slate-100; }
   p  { @apply text-body; }
   small { @apply text-small; }
 }
@@ -69,12 +69,13 @@
   .input-field {
     @apply w-full px-4 py-3 text-small text-gray-900
            border border-gray-300 rounded-md bg-white
+           dark:border-slate-700 dark:bg-slate-900 dark:text-slate-100
            placeholder:text-gray-400
            focus:outline-none focus:ring-2 focus:ring-york-600
            focus:border-transparent transition-all duration-fast;
   }
   .input-label {
-    @apply block text-small font-semibold text-gray-600 mb-1;
+    @apply block text-small font-semibold text-gray-600 mb-1 dark:text-slate-300;
   }
   .input-error {
     @apply text-tiny text-error mt-1;
@@ -82,7 +83,7 @@
 
   /* Cards */
   .card {
-    @apply bg-white border border-gray-200 rounded-lg shadow-sm p-6;
+    @apply bg-white border border-gray-200 rounded-lg shadow-sm p-6 dark:border-slate-700 dark:bg-slate-800;
   }
   .card-hover {
     @apply card hover:shadow-md transition-shadow duration-normal cursor-pointer;
@@ -115,7 +116,7 @@
     @apply text-tiny font-semibold text-gray-400 uppercase tracking-wider;
   }
   .stat-value {
-    @apply text-h1 font-bold text-gray-900;
+    @apply text-h1 font-bold text-gray-900 dark:text-slate-100;
   }
   .stat-sub {
     @apply text-tiny text-gray-400;
@@ -139,16 +140,16 @@
     @apply w-full text-small text-left;
   }
   .table-base thead tr {
-    @apply border-b border-gray-200;
+    @apply border-b border-gray-200 dark:border-slate-700;
   }
   .table-base thead th {
     @apply px-4 py-3 text-tiny font-semibold text-gray-400 uppercase tracking-wider;
   }
   .table-base tbody tr {
-    @apply border-b border-gray-100 hover:bg-gray-100 transition-colors;
+    @apply border-b border-gray-100 hover:bg-gray-100 transition-colors dark:border-slate-700 dark:hover:bg-slate-800;
   }
   .table-base tbody td {
-    @apply px-4 py-3 text-gray-600;
+    @apply px-4 py-3 text-gray-600 dark:text-slate-300;
   }
 }
 

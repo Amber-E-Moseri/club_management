@@ -4,7 +4,7 @@ import { Card } from '../components/foundation/Card';
 import { Input } from '../components/foundation/Input';
 import type { AuthUser } from '../lib/auth';
 import type { Meeting } from '../types';
-import { downloadCSV, exportContactsCSV, exportMeetingAttendanceCSV, exportMembersCSV } from '../lib/queries/export';
+import { downloadCSV, exportContactsCSV, exportMeetingAttendanceCSV, exportMembersCSV, type MemberExportStatus } from '../lib/queries/export';
 import { fetchMeetings } from '../lib/queries/meetings';
 
 interface Props {
@@ -24,16 +24,17 @@ export const AdminDataExport: React.FC<Props> = ({ user }) => {
     fetchMeetings(false).then(setMeetings).catch(console.error);
   }, []);
 
-  async function runExport(kind: 'members' | 'contacts' | 'attendance') {
+  async function runExport(kind: 'members' | 'contacts' | 'attendance', memberStatus: MemberExportStatus = 'all') {
     setLoading(true);
     try {
       const csv =
         kind === 'members'
-          ? await exportMembersCSV()
+          ? await exportMembersCSV(memberStatus)
           : kind === 'contacts'
             ? await exportContactsCSV({ date_from: dateFrom || undefined, date_to: dateTo || undefined })
             : await exportMeetingAttendanceCSV(meetingId);
-      downloadCSV(`${kind}-${new Date().toISOString().split('T')[0]}.csv`, csv);
+      const suffix = kind === 'members' ? `-${memberStatus}` : '';
+      downloadCSV(`${kind}${suffix}-${new Date().toISOString().split('T')[0]}.csv`, csv);
       setLastExported(new Date().toLocaleString());
     } finally {
       setLoading(false);
@@ -58,8 +59,12 @@ export const AdminDataExport: React.FC<Props> = ({ user }) => {
 
       <div className="grid grid-cols-1 gap-6 lg:grid-cols-3">
         <Card title="Members" hasRedBorder>
-          <p className="mb-4 text-small text-gray-500">Export member directory details.</p>
-          <Button onClick={() => runExport('members')} loading={loading} fullWidth>Export Members CSV</Button>
+          <p className="mb-4 text-small text-gray-500">Export profile details for all, active, or archived/inactive members.</p>
+          <div className="space-y-3">
+            <Button onClick={() => runExport('members', 'all')} loading={loading} fullWidth>Export All Profiles CSV</Button>
+            <Button variant="secondary" onClick={() => runExport('members', 'active')} loading={loading} fullWidth>Export Active CSV</Button>
+            <Button variant="ghost" onClick={() => runExport('members', 'archived')} loading={loading} fullWidth>Export Archived CSV</Button>
+          </div>
         </Card>
 
         <Card title="Contacts">
