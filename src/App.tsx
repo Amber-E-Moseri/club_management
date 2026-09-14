@@ -26,6 +26,7 @@ import { EmailPreferences } from './pages/EmailPreferences';
 import { AdminZoomSettings } from './pages/AdminZoomSettings';
 import { AdminDataExport } from './pages/AdminDataExport';
 import { AdminEmailLog } from './pages/AdminEmailLog';
+import { Growth } from './pages/Growth';
 import { PushPermissionPrompt } from './components/feature/PushPermissionPrompt';
 import { usePushNotifications } from './hooks/usePushNotifications';
 import { PendingApproval } from './pages/PendingApproval';
@@ -81,6 +82,7 @@ function AppShell() {
         <Route path="/meetings" element={<Meetings user={user} />} />
         <Route path="/messages" element={<WeeklyMessages user={user} />} />
         <Route path="/habits" element={<HabitTracker user={user} />} />
+        <Route path="/growth" element={<Growth user={user} />} />
         <Route path="*" element={<Navigate to="/" replace />} />
       </Routes>
 
