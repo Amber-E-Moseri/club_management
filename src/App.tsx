@@ -7,7 +7,7 @@ import { Events } from './pages/Events';
 import { Members } from './pages/Members';
 import { Announcements } from './pages/Announcements';
 import { UserProfile } from './pages/UserProfile';
-import { AdminPanel } from './pages/AdminPanel';
+import { AdminHub } from './pages/AdminHub';
 import { AdminDevotionalReport } from './pages/AdminDevotionalReport';
 import { Login } from './pages/Login';
 import { Outreach } from './pages/Outreach';
@@ -65,7 +65,7 @@ function AppShell() {
         <Route path="/devotionals" element={<DevotionalViewer user={user} />} />
         <Route path="/profile" element={<UserProfile currentUser={user} />} />
         <Route path="/email-preferences" element={<EmailPreferences user={user} />} />
-        <Route path="/admin" element={<AdminPanel user={user} />} />
+        <Route path="/admin" element={<AdminHub user={user} />} />
         <Route path="/admin/devotionals" element={<AdminDevotionalUpload user={user} />} />
         <Route path="/admin/testimonies" element={<AdminTestimonies user={user} />} />
         <Route path="/admin/reports" element={<AdminDevotionalReport user={user} />} />
