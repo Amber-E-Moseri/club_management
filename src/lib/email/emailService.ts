@@ -6,7 +6,8 @@ export interface SendEmailOptions {
   subject: string;
   html: string;
   text?: string;
-  templateId?: string;
+  memberId?: string;
+  templateType?: EmailTemplateType;
 }
 
 export interface BatchRecipient {
@@ -26,6 +27,8 @@ export async function sendEmail(options: SendEmailOptions): Promise<{ id: string
       subject: options.subject,
       html: options.html,
       text: options.text,
+      memberId: options.memberId,
+      templateType: options.templateType,
     },
   });
   if (error) throw new Error(`Email send failed: ${error.message}`);

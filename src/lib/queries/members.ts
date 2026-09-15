@@ -1,5 +1,71 @@
 import { supabase } from '../supabase';
+import { sendEmail, getAppOrigin } from '../email/emailService';
+import { accountApprovedTemplate } from '../email/emailTemplates';
 import type { Member } from '../../types';
+
+export interface ApprovalResult {
+  approval: 'success' | 'not_pending' | 'not_found';
+  email: 'sent' | 'failed' | 'skipped';
+  emailError?: string;
+}
+
+/**
+ * Activates a pending member account and requests an account-approved notification.
+ * Email failure does NOT roll back the profile activation.
+ * Idempotent: if the member is already active, no duplicate email is sent.
+ */
+export async function approvePendingMember(
+  memberId: string,
+  actingUserId: string,
+): Promise<ApprovalResult> {
+  // Verify acting user has approval authority
+  const { data: actor } = await supabase
+    .from('profiles')
+    .select('role')
+    .eq('id', actingUserId)
+    .single();
+
+  if (!actor || !['admin', 'coordinator', 'cell_leader'].includes(actor.role)) {
+    throw new Error('Not authorised to approve members.');
+  }
+
+  // Fetch target; guard against already-active (idempotency)
+  const { data: target, error: fetchErr } = await supabase
+    .from('profiles')
+    .select('id, email, full_name, status')
+    .eq('id', memberId)
+    .single();
+
+  if (fetchErr || !target) return { approval: 'not_found', email: 'skipped' };
+  if (target.status !== 'pending') return { approval: 'not_pending', email: 'skipped' };
+
+  // Activate profile
+  const { error: updateErr } = await supabase
+    .from('profiles')
+    .update({ status: 'active' })
+    .eq('id', memberId);
+
+  if (updateErr) throw new Error(updateErr.message ?? 'Profile activation failed.');
+
+  // Request notification — failure here must not undo the activation
+  const loginUrl = `${getAppOrigin()}/`;
+  const { subject, html, text } = accountApprovedTemplate({
+    memberId,
+    memberName: target.full_name || target.email,
+    loginUrl,
+  });
+
+  try {
+    await sendEmail({ to: target.email, subject, html, text, memberId, templateType: 'account_approved' });
+    return { approval: 'success', email: 'sent' };
+  } catch (err) {
+    return {
+      approval: 'success',
+      email: 'failed',
+      emailError: err instanceof Error ? err.message : 'Unknown email error',
+    };
+  }
+}
 
 export interface MemberFilters {
   search?: string;

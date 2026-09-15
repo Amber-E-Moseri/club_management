@@ -3,6 +3,7 @@ import { supabase } from '../lib/supabase';
 import { Badge } from '../components/foundation/Badge';
 import { Button } from '../components/foundation/Button';
 import { getInitials } from '../lib/utils';
+import { approvePendingMember } from '../lib/queries/members';
 import type { AuthUser } from '../lib/auth';
 
 interface Props { user: AuthUser | null; }
@@ -23,6 +24,7 @@ export const AdminPendingApprovals: React.FC<Props> = ({ user }) => {
   const [loading, setLoading] = useState(true);
   const [working, setWorking] = useState<string | null>(null);
   const [error, setError] = useState('');
+  const [notice, setNotice] = useState('');
 
   const canApprove = CAN_APPROVE.includes(user?.role ?? '');
 
@@ -40,11 +42,37 @@ export const AdminPendingApprovals: React.FC<Props> = ({ user }) => {
       });
   }, [canApprove]);
 
-  const updateStatus = async (id: string, status: 'active' | 'rejected') => {
+  const handleApprove = async (id: string) => {
+    if (!user?.id) return;
     setWorking(id);
-    const { error: e } = await supabase.from('profiles').update({ status }).eq('id', id);
+    setError('');
+    setNotice('');
+    try {
+      const result = await approvePendingMember(id, user.id);
+      if (result.approval === 'success') {
+        setPending((prev) => prev.filter((p) => p.id !== id));
+        setNotice(
+          result.email === 'sent'
+            ? 'Member approved and notification sent.'
+            : 'Member approved, but the notification email could not be sent.',
+        );
+      } else if (result.approval === 'not_pending') {
+        setPending((prev) => prev.filter((p) => p.id !== id));
+        setNotice('Member is already active.');
+      }
+    } catch (e) {
+      setError(e instanceof Error ? e.message : 'Approval failed.');
+    }
+    setWorking(null);
+  };
+
+  const handleReject = async (id: string) => {
+    setWorking(id);
+    setError('');
+    setNotice('');
+    const { error: e } = await supabase.from('profiles').update({ status: 'rejected' }).eq('id', id);
     if (e) { setError(e.message); }
-    else { setPending((prev) => prev.filter((p) => p.id !== id || status === 'rejected' ? p.id !== id : true).filter(p => p.id !== id)); }
+    else { setPending((prev) => prev.filter((p) => p.id !== id)); }
     setWorking(null);
   };
 
@@ -68,6 +96,9 @@ export const AdminPendingApprovals: React.FC<Props> = ({ user }) => {
 
         {error && (
           <div className="bg-red-50 border border-red-200 text-red-700 rounded-lg px-4 py-3 text-sm mb-4">{error}</div>
+        )}
+        {notice && (
+          <div className="bg-green-50 border border-green-200 text-green-700 rounded-lg px-4 py-3 text-sm mb-4">{notice}</div>
         )}
 
         {loading && (
@@ -109,7 +140,7 @@ export const AdminPendingApprovals: React.FC<Props> = ({ user }) => {
                     variant="primary"
                     size="small"
                     loading={working === p.id}
-                    onClick={() => updateStatus(p.id, 'active')}
+                    onClick={() => handleApprove(p.id)}
                   >
                     Approve
                   </Button>
@@ -117,7 +148,7 @@ export const AdminPendingApprovals: React.FC<Props> = ({ user }) => {
                     variant="ghost"
                     size="small"
                     loading={working === p.id}
-                    onClick={() => updateStatus(p.id, 'rejected')}
+                    onClick={() => handleReject(p.id)}
                   >
                     Reject
                   </Button>

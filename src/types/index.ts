@@ -570,6 +570,7 @@ export type EmailTemplateType =
   | 'devotional_reminder'
   | 'testimony_approved'
   | 'weekly_digest'
+  | 'account_approved'
   | 'generic';
 
 export type EmailStatus = 'queued' | 'sent' | 'failed' | 'bounced';
