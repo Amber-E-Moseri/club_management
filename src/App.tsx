@@ -13,7 +13,7 @@ import { Login } from './pages/Login';
 import { Outreach } from './pages/Outreach';
 import { DailyConfessions } from './pages/DailyConfessions';
 import { TestimonyLog } from './pages/TestimonyLog';
-import { Meetings } from './pages/Meetings';
+import { MeetingsHub } from './pages/MeetingsHub';
 import { DevotionalViewer } from './pages/DevotionalViewer';
 import { AdminDevotionalUpload } from './pages/AdminDevotionalUpload';
 import { AdminTestimonies } from './pages/AdminTestimonies';
@@ -79,7 +79,7 @@ function AppShell() {
         <Route path="/contacts" element={<Outreach user={user} />} />
         <Route path="/confessions" element={<DailyConfessions user={user} />} />
         <Route path="/testimonies" element={<TestimonyLog user={user} />} />
-        <Route path="/meetings" element={<Meetings user={user} />} />
+        <Route path="/meetings" element={<MeetingsHub user={user} />} />
         <Route path="/messages" element={<WeeklyMessages user={user} />} />
         <Route path="/habits" element={<HabitTracker user={user} />} />
         <Route path="/growth" element={<Growth user={user} />} />
