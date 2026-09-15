@@ -41,6 +41,7 @@ export interface Member {
   joined_at: string;
   phone?: string;
   student_number?: string;
+  cell_id?: string;
 }
 
 // ─── Announcements ───────────────────────────────────────────────────────────
