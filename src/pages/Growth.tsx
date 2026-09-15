@@ -55,11 +55,25 @@ export const Growth: React.FC<GrowthProps> = ({ user }) => {
   const habitsTotal = habitsWithStats.length;
 
   return (
-    <div className="max-w-2xl mx-auto">
-      <div className="mb-6">
-        <h1 className="text-2xl font-bold text-gray-900 dark:text-white">Growth</h1>
-        <p className="text-sm text-gray-500 dark:text-gray-400 mt-1">Your spiritual growth tools</p>
+    <div className="space-y-5 pb-4">
+      {/* Header */}
+      <div className="bg-white dark:bg-slate-800 border border-gray-200 dark:border-slate-700 rounded-2xl shadow-sm overflow-hidden">
+        <div className="border-t-4 border-york-600 px-5 py-5">
+          <p className="text-xs font-semibold text-york-600 uppercase tracking-wider">Spiritual</p>
+          <h1 className="text-xl font-bold text-gray-900 dark:text-slate-100 mt-1">Growth</h1>
+          <p className="text-sm text-gray-500 dark:text-slate-400 mt-1">
+            Your discipleship journey in one place.
+          </p>
+        </div>
       </div>
+
+      {/* Stats strip — habits progress */}
+      {habitsTotal > 0 && (
+        <div className="grid grid-cols-2 gap-3">
+          <StatChip label="Done today" value={habitsCompleted} />
+          <StatChip label="Total habits" value={habitsTotal} />
+        </div>
+      )}
 
       <div className="space-y-3">
         <GrowthCard
@@ -123,3 +137,10 @@ export const Growth: React.FC<GrowthProps> = ({ user }) => {
     </div>
   );
 };
+
+const StatChip: React.FC<{ label: string; value: number }> = ({ label, value }) => (
+  <div className="bg-white dark:bg-slate-800 border border-gray-200 dark:border-slate-700 rounded-2xl shadow-sm px-4 py-3">
+    <p className="text-[10px] font-bold text-gray-400 dark:text-slate-500 uppercase tracking-wider">{label}</p>
+    <p className="text-2xl font-bold text-gray-900 dark:text-slate-100 mt-0.5">{value}</p>
+  </div>
+);
