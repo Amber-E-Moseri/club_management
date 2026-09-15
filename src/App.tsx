@@ -10,7 +10,7 @@ import { UserProfile } from './pages/UserProfile';
 import { AdminPanel } from './pages/AdminPanel';
 import { AdminDevotionalReport } from './pages/AdminDevotionalReport';
 import { Login } from './pages/Login';
-import { ContactLogging } from './pages/ContactLogging';
+import { Outreach } from './pages/Outreach';
 import { DailyConfessions } from './pages/DailyConfessions';
 import { TestimonyLog } from './pages/TestimonyLog';
 import { Meetings } from './pages/Meetings';
@@ -76,7 +76,7 @@ function AppShell() {
         <Route path="/admin/email-log" element={<AdminEmailLog user={user} />} />
         <Route path="/admin/pending" element={<AdminPendingApprovals user={user} />} />
         <Route path="/books" element={<BookOfMonthPage user={user} />} />
-        <Route path="/contacts" element={<ContactLogging user={user} />} />
+        <Route path="/contacts" element={<Outreach user={user} />} />
         <Route path="/confessions" element={<DailyConfessions user={user} />} />
         <Route path="/testimonies" element={<TestimonyLog user={user} />} />
         <Route path="/meetings" element={<Meetings user={user} />} />

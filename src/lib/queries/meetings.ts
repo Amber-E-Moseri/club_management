@@ -33,11 +33,19 @@ export async function fetchMeeting(id: string): Promise<Meeting | null> {
   return data;
 }
 
+function normalizeInput<T extends Partial<MeetingInput>>(input: T): T {
+  const out = { ...input };
+  if ('end_time' in out && !out.end_time) delete out.end_time;
+  if ('location' in out && !out.location) (out as Record<string, unknown>).location = null;
+  if ('zoom_link' in out && !out.zoom_link) (out as Record<string, unknown>).zoom_link = null;
+  return out;
+}
+
 export async function createMeeting(
   input: MeetingInput & { created_by: string }
 ): Promise<Meeting> {
   const { data, error } = await supabase
-    .from('meetings').insert(input).select().single();
+    .from('meetings').insert(normalizeInput(input)).select().single();
   if (error) throw new Error(error.message);
   return data;
 }
@@ -47,7 +55,7 @@ export async function updateMeeting(
   input: Partial<MeetingInput>
 ): Promise<Meeting> {
   const { data, error } = await supabase
-    .from('meetings').update(input).eq('id', id).select().single();
+    .from('meetings').update(normalizeInput(input)).eq('id', id).select().single();
   if (error) throw new Error(error.message);
   return data;
 }
