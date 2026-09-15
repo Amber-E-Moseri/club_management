@@ -16,9 +16,6 @@ const supabaseUrl = Deno.env.get('SUPABASE_URL') ?? '';
 const serviceRoleKey = Deno.env.get('SUPABASE_SERVICE_ROLE_KEY') ?? '';
 const emailRelayUrl = Deno.env.get('EMAIL_RELAY_URL') ?? '';
 const emailRelaySecret = Deno.env.get('EMAIL_RELAY_SECRET') ?? '';
-const resendApiKey = Deno.env.get('RESEND_API_KEY') ?? '';
-const sendgridApiKey = Deno.env.get('SENDGRID_API_KEY') ?? '';
-const fromEmail = Deno.env.get('EMAIL_FROM') ?? 'BLW York Hub <no-reply@blwyork.org>';
 
 const supabase = createClient(supabaseUrl, serviceRoleKey);
 
@@ -129,7 +126,6 @@ async function sendAndLog(input: {
 }
 
 async function sendProviderEmail(to: string, subject: string, html: string, text?: string): Promise<{ id: string }> {
-  // Gmail relay (Vercel serverless function) — checked first
   if (emailRelayUrl && emailRelaySecret) {
     const res = await fetch(emailRelayUrl, {
       method: 'POST',
@@ -143,40 +139,7 @@ async function sendProviderEmail(to: string, subject: string, html: string, text
     if (!res.ok) throw new Error(data?.message ?? `Gmail relay error ${res.status}`);
     return { id: data.messageId ?? crypto.randomUUID() };
   }
-  if (resendApiKey) {
-    const res = await fetch('https://api.resend.com/emails', {
-      method: 'POST',
-      headers: { Authorization: `Bearer ${resendApiKey}`, 'Content-Type': 'application/json' },
-      body: JSON.stringify({ from: fromEmail, to, subject, html, text }),
-    });
-    const data = await res.json();
-    if (!res.ok) throw new Error(data?.message ?? 'Resend request failed');
-    return { id: data.id };
-  }
-  if (sendgridApiKey) {
-    const res = await fetch('https://api.sendgrid.com/v3/mail/send', {
-      method: 'POST',
-      headers: { Authorization: `Bearer ${sendgridApiKey}`, 'Content-Type': 'application/json' },
-      body: JSON.stringify({
-        personalizations: [{ to: [{ email: to }] }],
-        from: parseFromEmail(fromEmail),
-        subject,
-        content: [
-          { type: 'text/plain', value: text ?? stripHtml(html) },
-          { type: 'text/html', value: html },
-        ],
-      }),
-    });
-    if (!res.ok) throw new Error(await res.text());
-    return { id: crypto.randomUUID() };
-  }
-  throw new Error('EMAIL_PROVIDER_NOT_CONFIGURED. Set EMAIL_RELAY_URL + EMAIL_RELAY_SECRET in Supabase secrets.');
-}
-
-function parseFromEmail(value: string) {
-  const match = value.match(/^(.*)<(.+)>$/);
-  if (!match) return { email: value };
-  return { name: match[1].trim(), email: match[2].trim() };
+  throw new Error('EMAIL_PROVIDER_NOT_CONFIGURED. Set EMAIL_RELAY_URL + EMAIL_RELAY_SECRET in Supabase project secrets.');
 }
 
 function stripHtml(html: string) {

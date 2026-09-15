@@ -155,6 +155,22 @@ describe('sendViaGmail', () => {
     await expect(sendViaGmail(validBody, validConfig)).rejects.toThrow('Authentication failed');
   });
 
+  it('ignores any from field in the request body — sender is always fixed to GMAIL_USER', async () => {
+    mockSendMail.mockResolvedValue({ messageId: '<id@gmail.com>' });
+
+    // Simulate a caller attempting to inject a custom from address
+    await sendViaGmail({ ...validBody, from: 'attacker@evil.com' } as unknown as typeof validBody, validConfig);
+
+    expect(mockSendMail).toHaveBeenCalledWith(
+      expect.objectContaining({
+        from: expect.stringContaining('blwyorkuni@gmail.com'),
+      }),
+    );
+    expect(mockSendMail).not.toHaveBeenCalledWith(
+      expect.objectContaining({ from: 'attacker@evil.com' }),
+    );
+  });
+
   it('never logs the App Password', async () => {
     const spy = jest.spyOn(console, 'log').mockImplementation(() => {});
     const errSpy = jest.spyOn(console, 'error').mockImplementation(() => {});

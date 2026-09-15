@@ -124,6 +124,25 @@ test('pending → active: email failure leaves member active', async () => {
   expect(result.emailError).toContain('SMTP unavailable');
 });
 
+test('relay failure: sendEmail called exactly once — no retry, no fallback provider', async () => {
+  (supabase.from as jest.Mock)
+    .mockImplementationOnce(() => makeQuery({ role: 'admin' }))
+    .mockImplementationOnce(() => makeQuery({ id: PENDING_MEMBER_ID, email: 'bob@example.com', full_name: 'Bob', status: 'pending' }))
+    .mockImplementationOnce(() => ({
+      update: jest.fn(() => ({ eq: jest.fn(() => Promise.resolve({ error: null })) })),
+    }));
+
+  (emailService.sendEmail as jest.Mock).mockRejectedValueOnce(new Error('Gmail relay returned 500'));
+
+  const result = await approvePendingMember(PENDING_MEMBER_ID, 'admin-id');
+
+  expect(result.approval).toBe('success');
+  expect(result.email).toBe('failed');
+  expect(result.emailError).toContain('Gmail relay returned 500');
+  // Exactly one attempt — no retry, no silent fallback to another provider
+  expect(emailService.sendEmail).toHaveBeenCalledTimes(1);
+});
+
 // ─── Idempotency: already-active member ──────────────────────────────────────
 
 test('already active member: approval skipped, no email sent', async () => {
