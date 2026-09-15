@@ -10,7 +10,7 @@ export interface MemberFilters {
 export async function fetchMembersFiltered(filters: MemberFilters = {}): Promise<Member[]> {
   let q = supabase
     .from('profiles')
-    .select('id, full_name, email, avatar_url, role, joined_at, phone, student_number, cell_id')
+    .select('id, full_name, email, avatar_url, role, joined_at, cell_id')
     .order('full_name', { ascending: true });
 
   if (filters.search) {

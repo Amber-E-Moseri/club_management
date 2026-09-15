@@ -2,8 +2,6 @@ import React from 'react';
 import { X, Mail, Phone, Calendar, Building2, ExternalLink } from 'lucide-react';
 import { format, parseISO } from 'date-fns';
 import { useUserProfile } from '../../hooks/useUserProfile';
-import { PersonStatusBadge } from './PersonStatusBadge';
-import { getInitials } from '../../lib/utils';
 import type { AuthUser } from '../../lib/auth';
 
 const ROLE_LEVEL: Record<AuthUser['role'], number> = {

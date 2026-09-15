@@ -1,6 +1,6 @@
 import React from 'react';
 import { Search, X } from 'lucide-react';
-import type { Cell, UserRole } from '../../types';
+import type { Cell } from '../../types';
 
 const ROLE_OPTIONS: { value: string; label: string }[] = [
   { value: '', label: 'All roles' },
