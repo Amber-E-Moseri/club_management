@@ -26,7 +26,7 @@ PRODUCTION READY: NO
 2. Everything under "FIX BEFORE BROAD ROLLOUT" below closed or explicitly accepted.
 3. Live-provider email verification (real credentials, domain authentication, real inbox click-through of the unsubscribe link).
 4. Production Supabase Auth configuration verified (§ Fix-before-broad #1).
-5. A green CI run on the final merge commit (see §4 — runs on the branch, not on a PR/`main`).
+5. A green CI run on the final merge commit (the green run above is on the branch via `workflow_dispatch`, not on a PR or `main`).
 
 ## 2. BLOCKERS — issues that make production deployment unsafe
 
@@ -80,7 +80,7 @@ PRODUCTION READY: NO
 | E2E mocked | `npx playwright test` | **5 passed** |
 | **E2E real backend** | `E2E_REAL_BACKEND=1 npx playwright test` | **6 passed** (adds sign-up → pending → blocked self-approval → approval → login) (baseline: 0/5 ran — Windows-only `set PORT=` config) |
 | Upgrade path | original migrations + hand-run `src/db` scripts (production-like) → apply 009+010 twice → suite | **33/33 passed**, idempotent |
-| CI (GitHub Actions) | `workflow_dispatch` on this commit | **CI_RESULT_PLACEHOLDER** |
+| CI (GitHub Actions) | `workflow_dispatch` on this commit | **run [37135192569](https://github.com/Amber-E-Moseri/club_management/actions/runs/37135192569) — all 4 jobs succeeded** (Frontend; Edge Functions; mocked E2E; Database incl. `supabase start` + `db reset` + SQL integrity + 33 API tests + email workflow + real-backend E2E + idempotent re-push). Triggered by `workflow_dispatch` on the branch: it has **not** run on a PR or on `main` |
 
 Not reproduced in the sandbox: the repo's CI runs the **full** `supabase start` stack (kong, GoTrue, PostgREST, storage-api); here an equivalent stack (same Postgres image, GoTrue and storage-api images; PostgREST v12.2.12; a 30-line CORS gateway) was used because the ECR registry is unreachable. The GitHub run is the authoritative check of the CI workflow itself.
 
