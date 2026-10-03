@@ -135,6 +135,8 @@ Deno.test({ name: 'email workflow against a real database', ignore: !configured,
     assert.equal(fail.status, 'failed');
     assert.equal((await send({ action: 'resend', messageId: fail.id }, member.token)).status, 403);
     assert.equal((await send({ action: 'resend', messageId: fail.id }, staff.token)).status, 200);
-    assert.equal((await admin.from('email_log').select('status').eq('id', fail.id).single()).data.status, 'sent');
+    const { data: rows } = await admin.from('email_log').select('id,status,retry_count,failed_reason').eq('recipient_email', other.email);
+    assert.equal(rows.length, 1, 'retry reuses the original log row');
+    assert.deepEqual([rows[0].status, rows[0].retry_count, rows[0].failed_reason], ['sent', 1, null]);
   });
 } });

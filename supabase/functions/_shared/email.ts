@@ -44,12 +44,21 @@ export function createEmailService(admin: Db, env: EmailEnv, fetchImpl: FetchLik
     return `${env.supabaseUrl.replace(/\/$/, '')}/functions/v1/unsubscribe?token=${encodeURIComponent(token)}`;
   }
 
-  async function sendAndLog(input: SendInput): Promise<{ id?: string; logId?: string; suppressed?: boolean }> {
+  /** `existingLogId` re-uses an email_log row (resend) instead of inserting a new one. */
+  async function sendAndLog(
+    input: SendInput,
+    existingLogId?: string,
+  ): Promise<{ id?: string; logId?: string; suppressed?: boolean }> {
     const memberId = await resolveMemberId(input);
 
     if (memberId) {
       const { data: prefs } = await admin.from('email_preferences').select('*').eq('member_id', memberId).maybeSingle();
       if (isSuppressed(prefs ?? null, input.templateType)) {
+        const suppressed = { status: 'suppressed', failed_reason: 'recipient opted out' };
+        if (existingLogId) {
+          await admin.from('email_log').update(suppressed).eq('id', existingLogId);
+          return { suppressed: true, logId: existingLogId };
+        }
         const { data: log } = await admin
           .from('email_log')
           .insert({
@@ -57,9 +66,8 @@ export function createEmailService(admin: Db, env: EmailEnv, fetchImpl: FetchLik
             recipient_email: input.to,
             subject: input.subject,
             template_type: input.templateType,
-            status: 'suppressed',
-            failed_reason: 'recipient opted out',
             html_content: input.html,
+            ...suppressed,
           })
           .select('id')
           .single();
@@ -67,20 +75,26 @@ export function createEmailService(admin: Db, env: EmailEnv, fetchImpl: FetchLik
       }
     }
 
-    const { data: log } = await admin
-      .from('email_log')
-      .insert({
-        member_id: memberId,
-        recipient_email: input.to,
-        subject: input.subject,
-        template_type: input.templateType,
-        status: 'queued',
-        // The placeholder (not the signed link) is persisted so tokens never sit in the log.
-        html_content: input.html,
-        text_content: input.text ?? stripHtml(input.html),
-      })
-      .select('id')
-      .single();
+    let log: { id?: string } | null;
+    if (existingLogId) {
+      await admin.from('email_log').update({ status: 'queued', failed_reason: null }).eq('id', existingLogId);
+      log = { id: existingLogId };
+    } else {
+      ({ data: log } = await admin
+        .from('email_log')
+        .insert({
+          member_id: memberId,
+          recipient_email: input.to,
+          subject: input.subject,
+          template_type: input.templateType,
+          status: 'queued',
+          // The placeholder (not the signed link) is persisted so tokens never sit in the log.
+          html_content: input.html,
+          text_content: input.text ?? stripHtml(input.html),
+        })
+        .select('id')
+        .single());
+    }
 
     try {
       const sent = await deliver(input, memberId);
@@ -105,20 +119,16 @@ export function createEmailService(admin: Db, env: EmailEnv, fetchImpl: FetchLik
   async function resend(messageId: string) {
     const { data: log, error } = await admin.from('email_log').select('*').eq('id', messageId).single();
     if (error || !log) throw new ProviderError('Email log entry not found');
-    const result = await sendAndLog({
+    // Retry on the SAME log row (as before), counting the attempt even if the provider fails again.
+    await admin.from('email_log').update({ retry_count: (log.retry_count ?? 0) + 1 }).eq('id', messageId);
+    return await sendAndLog({
       to: log.recipient_email,
       subject: log.subject,
       html: log.html_content ?? `<p>${escapeHtml(log.subject)}</p>`,
       text: log.text_content ?? undefined,
       memberId: log.member_id ?? undefined,
       templateType: log.template_type ?? 'generic',
-    });
-    // Mark the original failed row as superseded so "resend failed" does not repeat forever.
-    await admin
-      .from('email_log')
-      .update({ status: result.suppressed ? 'suppressed' : 'sent', sent_at: new Date().toISOString(), retry_count: (log.retry_count ?? 0) + 1 })
-      .eq('id', messageId);
-    return result;
+    }, messageId);
   }
 
   async function deliver(input: SendInput, memberId: string | null): Promise<{ id: string }> {
