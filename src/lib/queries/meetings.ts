@@ -64,7 +64,7 @@ export async function confirmAttendance(
 ): Promise<void> {
   const { error } = await supabase
     .from('meeting_attendances')
-    .upsert({ meeting_id: meetingId, user_id: userId, user_name: userName });
+    .upsert({ meeting_id: meetingId, user_id: userId, user_name: userName }, { onConflict: 'meeting_id,user_id' });
   if (error) throw new Error(error.message);
 }
 

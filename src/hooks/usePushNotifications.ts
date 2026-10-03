@@ -78,7 +78,7 @@ export function usePushNotifications(userId: string | undefined): UsePushNotific
       const subJson = sub.toJSON();
       const { error: dbError } = await supabase.from('push_subscriptions').upsert(
         {
-          user_id: userId,
+          member_id: userId,
           endpoint: sub.endpoint,
           p256dh: subJson.keys?.p256dh ?? '',
           auth: subJson.keys?.auth ?? '',
