@@ -62,3 +62,20 @@ test('toggles between dark and light mode', async ({ page }) => {
   await page.getByRole('button', { name: 'Light mode' }).click();
   await expect(page.locator('html')).not.toHaveClass(/dark/);
 });
+
+test('integrations without a backend are not advertised (Zoom tile/route, push prompt)', async ({ page }) => {
+  await page.goto('/');
+  await page.getByLabel('Email').fill('leader@yorku.ca');
+  await page.getByLabel('Password').fill('secret1');
+  await page.getByRole('button', { name: 'Sign In' }).click();
+  await expect(page.getByRole('heading', { name: /Welcome back, Jordan/i })).toBeVisible();
+  await expect(page.getByLabel('Enable push notifications')).toHaveCount(0);
+
+  await page.goto('/admin');
+  await expect(page.getByRole('heading', { name: 'Admin Panel' })).toBeVisible();
+  await expect(page.getByText('Role Management')).toBeVisible(); // other admin tiles still present
+  await expect(page.getByText('Zoom Integration')).toHaveCount(0);
+
+  await page.goto('/admin/zoom'); // direct URL falls through to the catch-all redirect
+  await expect(page.getByRole('heading', { name: /Welcome back, Jordan/i })).toBeVisible();
+});

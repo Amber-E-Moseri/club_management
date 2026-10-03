@@ -1,3 +1,4 @@
+import { features } from '../lib/features';
 import React from 'react';
 import { useNavigate } from 'react-router-dom';
 import { Card } from '../components/foundation/Card';
@@ -31,7 +32,7 @@ export const AdminPanel: React.FC<AdminPanelProps> = ({ user }) => {
             { label: 'Devotional Reports', desc: 'View daily devotional engagement stats', icon: '📊', path: '/admin/reports' },
             { label: 'Role Management', desc: 'Create custom admin roles and assign permissions', icon: '🔑', path: '/admin/roles' },
             { label: 'Contact Reports', desc: 'Evangelism and outreach activity analytics', icon: '📋', path: '/admin/contact-reports' },
-            { label: 'Zoom Integration', desc: 'Connect Zoom to auto-create video meetings', icon: '📹', path: '/admin/zoom' },
+            ...(features.zoom ? [{ label: 'Zoom Integration', desc: 'Connect Zoom to auto-create video meetings', icon: '📹', path: '/admin/zoom' }] : []),
             { label: 'Data Export', desc: 'Download members, contacts, and attendance backups', icon: 'EX', path: '/admin/exports' },
             { label: 'Email Log', desc: 'View sent, failed and bounced emails', icon: '✉️', path: '/admin/email-log' },
             { label: 'Settings', desc: 'Club settings and preferences', icon: '⚙️' },

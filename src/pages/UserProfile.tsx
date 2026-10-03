@@ -3,6 +3,7 @@ import { Card } from '../components/foundation/Card';
 import { Button } from '../components/foundation/Button';
 import { Badge } from '../components/foundation/Badge';
 import { ProfileForm } from '../components/feature/ProfileForm';
+import { features } from '../lib/features';
 import { PushNotificationSettings } from '../components/feature/PushNotificationSettings';
 import { useUserProfile } from '../hooks/useUserProfile';
 import type { AuthUser } from '../lib/auth';
@@ -143,7 +144,7 @@ export const UserProfile: React.FC<UserProfileProps> = ({ currentUser, viewUserI
           )}
         </Card>
 
-        {isOwnProfile && (
+        {isOwnProfile && features.push && (
           <PushNotificationSettings userId={currentUser?.id} />
         )}
       </div>

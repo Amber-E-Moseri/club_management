@@ -31,11 +31,12 @@ import { usePushNotifications } from './hooks/usePushNotifications';
 import { PendingApproval } from './pages/PendingApproval';
 import { AdminPendingApprovals } from './pages/AdminPendingApprovals';
 import { useTheme } from './hooks/useTheme';
+import { features } from './lib/features';
 
 function AppShell() {
   useTheme();
   const { user, loading, error, signIn, signUp, signOut } = useAuth();
-  const { subscribe } = usePushNotifications(user?.id);
+  const { subscribe, configured: pushConfigured } = usePushNotifications(user?.id);
   const [showPushPrompt, setShowPushPrompt] = useState(true);
 
   if (loading) {
@@ -70,7 +71,7 @@ function AppShell() {
         <Route path="/admin/reports" element={<AdminDevotionalReport user={user} />} />
         <Route path="/admin/roles" element={<AdminRoleManagement user={user} />} />
         <Route path="/admin/contact-reports" element={<AdminContactReports user={user} />} />
-        <Route path="/admin/zoom" element={<AdminZoomSettings user={user} />} />
+        {features.zoom && <Route path="/admin/zoom" element={<AdminZoomSettings user={user} />} />}
         <Route path="/admin/exports" element={<AdminDataExport user={user} />} />
         <Route path="/admin/email-log" element={<AdminEmailLog user={user} />} />
         <Route path="/admin/pending" element={<AdminPendingApprovals user={user} />} />
@@ -84,7 +85,7 @@ function AppShell() {
         <Route path="*" element={<Navigate to="/" replace />} />
       </Routes>
 
-      {showPushPrompt && (
+      {features.push && pushConfigured && showPushPrompt && (
         <PushPermissionPrompt
           onAllow={async () => { setShowPushPrompt(false); await subscribe(); }}
           onDismiss={() => setShowPushPrompt(false)}
