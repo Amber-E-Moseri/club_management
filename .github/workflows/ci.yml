@@ -6,8 +6,16 @@ on:
   pull_request:
     branches: [main]
 
+permissions:
+  contents: read
+
+concurrency:
+  group: ci-${{ github.ref }}
+  cancel-in-progress: true
+
 jobs:
-  build-test:
+  frontend:
+    name: Frontend (typecheck, unit tests, build)
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
@@ -16,5 +24,86 @@ jobs:
           node-version: 20
           cache: npm
       - run: npm ci
+      - run: npm run typecheck
       - run: npm test -- --watchAll=false
       - run: npm run build
+        env:
+          CI: true   # treat ESLint warnings as errors, as in production builds
+      - name: Production dependencies have no high/critical advisories
+        run: npm audit --omit=dev --audit-level=high
+      - name: No server-side secrets in the browser bundle
+        run: |
+          # (*.js only: source maps legitimately contain third-party library comments)
+          if grep -rEl --include="*.js" "service_role|SUPABASE_SERVICE_ROLE|CRON_SECRET|UNSUBSCRIBE_SECRET|RESEND_API_KEY|SENDGRID_API_KEY|VAPID_PRIVATE" build/static; then
+            echo "::error::server-side secret name found in the production bundle"; exit 1
+          fi
+
+  e2e-mocked:
+    name: E2E (Playwright, mocked Supabase)
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 20
+          cache: npm
+      - run: npm ci
+      - run: npx playwright install --with-deps chromium
+      - run: npx playwright test
+        env:
+          CI: true
+
+  edge-functions:
+    name: Edge Functions (type-check + security unit tests)
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: denoland/setup-deno@v2
+        with:
+          deno-version: v2.x
+      - name: Type-check handlers, shared code and tests
+        run: deno check supabase/functions/*/handler.ts supabase/functions/_shared/*.ts supabase/functions/_tests/security_test.ts
+      - name: Authorization / cron-secret / signed-token regression tests
+        run: deno test supabase/functions/_tests/security_test.ts
+
+  database:
+    name: Database (fresh replay, RLS, security, real-backend E2E)
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 20
+          cache: npm
+      - uses: denoland/setup-deno@v2
+        with:
+          deno-version: v2.x
+      - uses: supabase/setup-cli@v1
+        with:
+          version: 2.119.0
+      - run: npm ci
+      - name: Start a brand-new local Supabase stack
+        run: supabase start -x studio,imgproxy,vector,logflare,edge-runtime,mailpit,postgres-meta,supavisor,realtime
+      - name: Replay every migration from zero + seed (fails on any migration error / duplicate version)
+        run: supabase db reset
+      - name: Export stack credentials
+        run: supabase status -o env | sed 's/^/export /' > "$RUNNER_TEMP/supabase.env"
+      - name: Schema integrity, RLS and security tests
+        run: |
+          source "$RUNNER_TEMP/supabase.env"
+          npm run test:db
+      - name: Real-backend E2E (sign-up -> pending -> approval -> login)
+        run: |
+          source "$RUNNER_TEMP/supabase.env"
+          npx playwright install --with-deps chromium
+          E2E_REAL_BACKEND=1 CI=true \
+          REACT_APP_SUPABASE_URL="$API_URL" REACT_APP_SUPABASE_ANON_KEY="$ANON_KEY" SUPABASE_SERVICE_ROLE_KEY="$SERVICE_ROLE_KEY" \
+          npx playwright test
+      - name: Migrations are idempotent (second `db push` is a no-op)
+        run: |
+          source "$RUNNER_TEMP/supabase.env"
+          supabase db push --db-url "$DB_URL" --dry-run | tee "$RUNNER_TEMP/push.txt"
+          grep -q "up to date" "$RUNNER_TEMP/push.txt"
+      - if: failure()
+        run: supabase status || true

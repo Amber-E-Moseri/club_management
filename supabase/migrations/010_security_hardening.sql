@@ -74,7 +74,7 @@ begin
     new.raw_user_meta_data->>'avatar_url',
     'member',
     'pending',
-    new.created_at
+    coalesce(new.created_at, now())
   )
   on conflict (id) do update set
     email      = excluded.email,
