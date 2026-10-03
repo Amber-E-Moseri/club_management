@@ -25,3 +25,11 @@ node ops/gen-rollback.mjs prod-state.json > rollback-010.sql           # review 
 `prod-snapshot.txt` contains masked emails only (no secrets, no tokens). Share it, `prod-state.json` classification output and nothing else.
 Also run (Supabase CLI, logged in): `supabase functions list`, `supabase secrets list` (names + digests only), and the Auth config
 `curl -H "Authorization: Bearer $SUPABASE_ACCESS_TOKEN" https://api.supabase.com/v1/projects/<ref>/config/auth` (redact keys before sharing).
+
+## Windows / Git Bash notes
+* Use **Git Bash** (not cmd/PowerShell) for the commands above; `$'\t'` and `>` redirection behave as shown. Node >= 18, PostgreSQL client tools (`psql`, `pg_dump`) >= 14.
+* `.gitattributes` keeps these files LF; psql reads CRLF too (tested), but keep LF anyway.
+* **Server-enforced read-only (recommended):** before running any `psql`, `export PGOPTIONS='-c default_transaction_read_only=on'` — the *server* then refuses every write in that session, independent of script content
+  (tested: `ops/rehearsal/readonly-proof.sh`). Works on direct connections (port 5432) and the session pooler; the *transaction* pooler (port 6543) rejects startup options — use direct/session mode.
+* Every SQL script here is additionally self-protecting (`set default_transaction_read_only = on`; `inspect-readonly.sql` is one `BEGIN READ ONLY … ROLLBACK`).
+* Secrets: never type the connection string on the command line (shell history). Use `read -rs PROD_DB_URL; export PROD_DB_URL` (input is hidden and not recorded), and `unset PROD_DB_URL` afterwards.

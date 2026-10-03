@@ -94,6 +94,10 @@ jobs:
         run: |
           source "$RUNNER_TEMP/supabase.env"
           npm run test:db
+      - name: Production-inspection scripts are provably read-only (superuser, injected writes must be refused)
+        run: |
+          source "$RUNNER_TEMP/supabase.env"
+          DB_URL="$DB_URL" bash ops/rehearsal/readonly-proof.sh
       - name: Real-backend E2E (sign-up -> pending -> approval -> login)
         run: |
           source "$RUNNER_TEMP/supabase.env"

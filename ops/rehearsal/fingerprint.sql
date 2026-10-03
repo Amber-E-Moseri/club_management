@@ -1,5 +1,7 @@
+\set QUIET on
+set default_transaction_read_only = on;   -- session guard: statements are read-only individually, so one missing table cannot abort the rest
 select 'rows:' || relname || '=' || (xpath('/row/c/text()', query_to_xml(format('select count(*) c from public.%I', relname), false, true, '')))[1]::text
-from pg_class c join pg_namespace n on n.oid=c.relnamespace where n.nspname='public' and relkind='r' and relname not in ('zz_probe') order by relname;
+from pg_class c join pg_namespace n on n.oid=c.relnamespace where n.nspname='public' and relkind='r' order by relname;
 select 'md5:profiles=' || md5(string_agg(id::text||role||status||coalesce(cell_id::text,'')||coalesce(full_name,''), ',' order by id)) from public.profiles;
 select 'md5:contacts=' || md5(string_agg(id::text||contact_name||coalesce(contact_phone,'')||coalesce(notes,''), ',' order by id)) from public.contacts;
 select 'md5:email_preferences=' || md5(string_agg(member_id::text||weekly_digest||opt_out_all, ',' order by member_id)) from public.email_preferences;

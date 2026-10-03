@@ -1,0 +1,4 @@
+# Preflight/ops files must keep LF endings on Windows checkouts (psql meta-commands such as \if/\gset break on CRLF).
+ops/** text eol=lf
+supabase/tests/** text eol=lf
+*.sh text eol=lf

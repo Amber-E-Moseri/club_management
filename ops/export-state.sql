@@ -1,5 +1,8 @@
 -- Pre-deploy state export (read-only) = input for classify-policies.mjs AND gen-rollback.mjs.
 --   psql "$PROD_DB_URL" -X -At -f ops/export-state.sql > prod-state.json      (keep it private; no secrets inside, but it is your rollback source)
+\set QUIET on
+set default_transaction_read_only = on;   -- session guard: any write attempt errors instead of running
+begin read only;
 select json_build_object(
   'policies', (select coalesce(json_agg(json_build_object('schema', schemaname, 'table', tablename, 'name', policyname, 'permissive', permissive,
       'roles', array_to_string(roles, ','), 'cmd', cmd, 'using', regexp_replace(coalesce(qual, ''), '\s+', ' ', 'g'),
@@ -13,3 +16,4 @@ select json_build_object(
   'profiles_status_default', (select column_default from information_schema.columns where table_schema='public' and table_name='profiles' and column_name='status'),
   'rls_tables', (select coalesce(json_agg(relname), '[]'::json) from pg_class c join pg_namespace n on n.oid=c.relnamespace where n.nspname='public' and relkind='r' and relrowsecurity)
 );
+rollback;

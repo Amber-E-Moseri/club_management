@@ -6,11 +6,13 @@
 // PRODUCTION-ONLY POLICY name unknown to the repo: 010 would DESTROY it. STOP and review each one before migrating
 // UNKNOWN                known name but the definition drifted from every repo version (manual edit in production?), or a table 010 does not manage
 import fs from 'node:fs';
-const dir = new URL('.', import.meta.url).pathname;
+import path from 'node:path';
+import { fileURLToPath } from 'node:url';
+const dir = path.dirname(fileURLToPath(import.meta.url)); // Windows-safe (URL.pathname gives /C:/... there)
 const raw = JSON.parse(fs.readFileSync(process.argv[2], 'utf8'));
 const prod = Array.isArray(raw) ? raw : raw.policies; // accepts export-policies.sql or export-state.sql output
-const canon = JSON.parse(fs.readFileSync(dir + 'canonical-policies.json', 'utf8'));
-const hist = JSON.parse(fs.readFileSync(dir + 'historical-policies.json', 'utf8'));
+const canon = JSON.parse(fs.readFileSync(path.join(dir, 'canonical-policies.json'), 'utf8'));
+const hist = JSON.parse(fs.readFileSync(path.join(dir, 'historical-policies.json'), 'utf8'));
 // pg_policies prints `auth.uid()` or `uid()` depending on the connecting role's search_path -> strip schema prefixes, whitespace, parens
 const n = (s) => (s || '').replace(/\b(auth|public|storage|extensions)\./g, '').replace(/\s+/g, '').replace(/[()]/g, '');
 const key = (p) => `${p.schema}.${p.table}.${p.name}`;

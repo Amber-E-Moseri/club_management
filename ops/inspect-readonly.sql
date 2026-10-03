@@ -2,6 +2,9 @@
 -- prints no secrets, masks e-mail local parts (the "+tag" is kept so +testcoord style accounts are visible).
 --   psql "$PROD_DB_URL" -X -A -F $'\t' -v ON_ERROR_STOP=0 -f ops/inspect-readonly.sql > prod-snapshot.txt
 -- Use a connection string from the Supabase dashboard (Database -> Connection string). Do NOT paste it into chat.
+\set QUIET on
+-- Belt and braces: every transaction in this session is read-only, AND the whole script is one READ ONLY transaction.
+set default_transaction_read_only = on;
 \pset footer off
 begin read only;
 \echo '## 01 server'
