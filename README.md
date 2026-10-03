@@ -88,11 +88,27 @@ src/
 
 ## Deployment Checklist
 
-1. Apply Supabase migrations in order from `supabase/migrations`.
-2. Configure Vercel with build command `npm run build` and output directory `build`.
-3. Add environment variables from `.env.example` in the Vercel project settings.
-4. Confirm the SPA rewrite in `vercel.json` is active so deep links resolve to `index.html`.
-5. Set the production domain and verify Supabase auth redirect URLs include it.
+Full detail: [`docs/production-environment-checklist.md`](docs/production-environment-checklist.md).
+Audit/certification evidence: [`docs/production-certification.md`](docs/production-certification.md).
+
+1. Back up the database, then apply the migrations with the Supabase CLI: `supabase db push` (chain `000…010`; replays from an empty database).
+2. Promote the first coordinator manually (new accounts are always `member`/`pending`):
+   `update public.profiles set role='coordinator', status='active' where email='<owner>';`
+3. Set Edge Function secrets (`supabase secrets set …`): email provider key + `EMAIL_FROM`, `UNSUBSCRIBE_SECRET`, `CRON_SECRET`, `PUBLIC_APP_URL`, `ALLOWED_ORIGINS`; deploy `send-email`, `unsubscribe`, `process-scheduled-emails`.
+4. Create the scheduler that POSTs to `process-scheduled-emails` with the `x-cron-secret` header.
+5. Configure Vercel (build command and SPA rewrite are in `vercel.json`) with `REACT_APP_SUPABASE_URL`, `REACT_APP_SUPABASE_ANON_KEY`, `REACT_APP_PUBLIC_APP_URL`.
+6. In Supabase Auth set the Site URL / redirect URLs to the production domain and require email confirmation.
+7. Run `npm run test:db` against a staging copy before going live.
+
+## Testing
+
+| Command | What it proves |
+|---|---|
+| `npm run typecheck && npm test && npm run build` | frontend |
+| `npx playwright test` | UI flows against a mocked Supabase |
+| `npm run test:functions` | Edge Function authorization, cron secret, signed unsubscribe tokens (Deno) |
+| `supabase start && supabase db reset` then `npm run test:db` (env from `supabase status -o env`) | fresh-database replay, RLS/authorization through the real API, email workflow |
+| `E2E_REAL_BACKEND=1 … npx playwright test real-backend` | sign-up → pending → approval → login against a real stack |
 
 ## Feature Notes
 
