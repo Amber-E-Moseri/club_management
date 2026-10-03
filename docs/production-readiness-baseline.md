@@ -99,3 +99,9 @@ reproduce it. Exact production state is **UNVERIFIED** (no production access in 
 | D-9 | No RLS policy anywhere considers `profiles.status` → a *pending* user has full member read access | policy audit |
 
 Phases 2–6 fix these with regression tests; `docs/security-audit.md` and `docs/rls-audit.md` track each one.
+
+## 7. Resolution status (added after remediation)
+
+Everything in §3–§6 was re-run after the fixes; the outcome, the evidence and what is still open are in
+[`production-certification.md`](production-certification.md). Details of each defect: [`security-audit.md`](security-audit.md) (S-1…S-9)
+and [`rls-audit.md`](rls-audit.md) (R-1…R-15). The baseline numbers above are intentionally left unchanged as the "before" record.
