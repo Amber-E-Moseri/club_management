@@ -5,6 +5,7 @@ on:
     branches: [main]
   pull_request:
     branches: [main]
+  workflow_dispatch:
 
 permissions:
   contents: read
@@ -100,10 +101,10 @@ jobs:
           E2E_REAL_BACKEND=1 CI=true \
           REACT_APP_SUPABASE_URL="$API_URL" REACT_APP_SUPABASE_ANON_KEY="$ANON_KEY" SUPABASE_SERVICE_ROLE_KEY="$SERVICE_ROLE_KEY" \
           npx playwright test
-      - name: Migrations are idempotent (second `db push` is a no-op)
+      - name: Migrations are idempotent (a second `db push` applies nothing)
         run: |
           source "$RUNNER_TEMP/supabase.env"
-          supabase db push --db-url "$DB_URL" --dry-run | tee "$RUNNER_TEMP/push.txt"
-          grep -q "up to date" "$RUNNER_TEMP/push.txt"
+          supabase db push --db-url "$DB_URL" | tee "$RUNNER_TEMP/push.txt"
+          grep -q '"upToDate":true' "$RUNNER_TEMP/push.txt"
       - if: failure()
         run: supabase status || true
