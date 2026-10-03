@@ -32,7 +32,7 @@
     "e2e:ui": "playwright test --ui",
     "eject": "react-scripts eject",
     "typecheck": "tsc --noEmit",
-    "test:functions": "deno test supabase/functions/_tests/security_test.ts",
+    "test:functions": "deno test --no-config supabase/functions/_tests/security_test.ts",
     "test:security": "node --test tests/security/*.test.mjs",
     "test:db": "bash scripts/run-db-tests.sh"
   },

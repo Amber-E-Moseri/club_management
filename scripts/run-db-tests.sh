@@ -14,4 +14,4 @@ echo "== 2/3 authorization tests through the real API (GoTrue + PostgREST)"
 node --test tests/security/*.test.mjs
 
 echo "== 3/3 email workflow against the real database (Edge Function handlers)"
-deno test --allow-net --allow-env --allow-read supabase/functions/_tests/integration_test.ts
+deno test --no-config --allow-net --allow-env --allow-read supabase/functions/_tests/integration_test.ts

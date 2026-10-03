@@ -63,9 +63,9 @@ jobs:
         with:
           deno-version: v2.x
       - name: Type-check handlers, shared code and tests
-        run: deno check supabase/functions/*/handler.ts supabase/functions/_shared/*.ts supabase/functions/_tests/security_test.ts
+        run: deno check --no-config supabase/functions/*/handler.ts supabase/functions/_shared/*.ts supabase/functions/_tests/security_test.ts
       - name: Authorization / cron-secret / signed-token regression tests
-        run: deno test supabase/functions/_tests/security_test.ts
+        run: deno test --no-config supabase/functions/_tests/security_test.ts
 
   database:
     name: Database (fresh replay, RLS, security, real-backend E2E)
