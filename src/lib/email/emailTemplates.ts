@@ -1,4 +1,4 @@
-import { buildUnsubscribeUrl, getAppOrigin } from './emailService';
+import { UNSUBSCRIBE_PLACEHOLDER, getAppOrigin } from './emailService';
 import type { EmailTemplateType } from '../../types';
 
 interface TemplateOutput {
@@ -16,7 +16,8 @@ function wrap(
   bodyText: string,
   subject: string
 ): TemplateOutput {
-  const unsubUrl = buildUnsubscribeUrl(memberId, notifType);
+  const unsubUrl = UNSUBSCRIBE_PLACEHOLDER; // replaced server-side with a signed link
+  void memberId; void notifType;
   const origin = getAppOrigin();
 
   const html = `<!DOCTYPE html>

@@ -412,3 +412,17 @@ enabled = true
 # declarative_schema_path = "./database"
 # JSON string passed through to pg-delta SQL formatting.
 # format_options = "{\"keywordCase\":\"upper\",\"indent\":2,\"maxWidth\":80,\"commaStyle\":\"trailing\"}"
+
+# ─── Edge Functions ───────────────────────────────────────────────────────────
+# send-email keeps verify_jwt = true (default) AND authorizes the caller in code.
+# The two functions below are called without a user JWT and authenticate themselves:
+#   unsubscribe              -> HMAC-signed token (UNSUBSCRIBE_SECRET)
+#   process-scheduled-emails -> shared secret header x-cron-secret (CRON_SECRET)
+[functions.send-email]
+verify_jwt = true
+
+[functions.unsubscribe]
+verify_jwt = false
+
+[functions.process-scheduled-emails]
+verify_jwt = false
