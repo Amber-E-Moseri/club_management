@@ -19,6 +19,15 @@ Nothing has been changed in production. Phases 12–17 have not been executed an
 Later commits on this branch add only `docs/` and `ops/` (tooling that is not bundled, deployed, or run by CI). Verify at any time:
 `git diff a0e4691 HEAD --stat -- . ':!docs' ':!ops'` must be empty. **Deploy from `a0e4691`'s tree** (merge, or cherry-pick nothing else).
 
+### 1a. UPDATE — revised deployment candidate: **`1ee9620847b86df6349068c6a0b0a5bd5006bfd4`** (supersedes `a0e4691`)
+
+At your direction the non-working Zoom and push UI is hidden for this release (flags `REACT_APP_ENABLE_ZOOM` / `REACT_APP_ENABLE_PUSH`, default **off**; `src/lib/features.ts`).
+Executable delta vs `a0e4691`: `src/App.tsx`, `src/pages/AdminPanel.tsx`, `src/pages/UserProfile.tsx`, `src/lib/features.ts` (new), `e2e/auth.spec.ts` (+1 test), `.env.example`.
+**Unchanged:** `supabase/` (migrations, functions, config), `tests/`, `.github/`, `package*.json`, `scripts/`, `vercel.json`, `playwright.config.ts` — so the database and Edge Function certification evidence carries over unchanged; the frontend evidence below was re-run.
+* Unit tests 16/16; mocked E2E now 6 (+1 skipped real-backend); the new test **fails on the old code** (Zoom tile + push prompt present) and passes on the new.
+* [CI run 37136593264](https://github.com/Amber-E-Moseri/club_management/actions/runs/37136593264) on `1ee9620`: Frontend, Edge Functions, Database, E2E — **all success, no skipped steps**.
+* Consequence for the plan: Step 17 (hide Zoom/push) is **done in code**; it ships with the frontend deploy (Step 12) and requires Vercel to have **no** `REACT_APP_ENABLE_ZOOM/PUSH`.
+
 ## 2. CI on the exact SHA (Phase 1)
 
 [Run 37135749909](https://github.com/Amber-E-Moseri/club_management/actions/runs/37135749909) — `workflow_dispatch`, head SHA `a0e4691`, **completed / success**.
@@ -88,6 +97,23 @@ accounts. Stack: `supabase/postgres:17.6.1.066`, GoTrue v2.188.1, storage-api v1
 Limits of the rehearsal (honest): it proves the *repo-known* upgrade path. It cannot reveal production-only policies, hand-edited functions, extra
 tables, or real data shapes — that is precisely what Steps 1–3 of the plan (real snapshot + classifier + restore-to-scratch rehearsal) are for.
 
+## 5a. Email provider key: is rotation required? (decision criteria — to be applied to the real logs)
+
+Correction to the earlier recommendation: the old unauthenticated `send-email` function was a **send oracle, not a key leak**. The provider API key lives only in Edge
+Function secrets and was never returned by any code path, so the endpoint's existence does **not** by itself compromise the key. (Note the endpoint was effectively public even with
+`verify_jwt` on, because the public anon key is a valid JWT.) Therefore:
+
+| Evidence found in the preflight | Decision |
+|---|---|
+| No unexplained sends: `email_log` (§15) and provider activity show only expected recipients/volumes, no `member_id IS NULL` bursts, no unfamiliar domains, no bounce/complaint spike | **Rotation NOT required.** Optional hygiene later |
+| Unexplained sends, abnormal volume, bounces/complaints, or the sending domain's reputation damaged | **Rotate** (and review domain reputation/DMARC reports) — the sender identity was abused even though the key was not exposed |
+| The key was ever in git history, a chat, a Vercel/browser variable (`REACT_APP_*`), logs, or shared with the removed seeder | **Rotate** (confirmed exposure) |
+| Key present as a `REACT_APP_*` / client variable | **Rotate immediately** and remove |
+| Provider logs unavailable | Cannot rule out abuse → treat as "unverified"; rotate only if any other trigger applies, and tighten with provider-side sending limits |
+
+Repo evidence already available: no provider key in the tree or in git history (`git grep` + history scan for `re_…`/`SG.…` patterns: none), and the browser bundle contains none.
+Rotation stays **unexecuted** until you approve it.
+
 ## 6. Phase 11 — PRODUCTION CHANGE PLAN (awaiting your approval; nothing below has been executed)
 
 ### 6.0 What I need from you to proceed
@@ -103,7 +129,7 @@ tables, or real data shapes — that is precisely what Steps 1–3 of the plan (
 | G2 Policies | classifier exit 0 (no PRODUCTION-ONLY / UNKNOWN) or each reviewed and ported/accepted by you |
 | G3 Admin continuity | ≥ 1 legitimate active coordinator (prefer 2) |
 | G4 Shape | `profiles.status` exists; tables owned by `postgres`; migration history state known; `handle_new_user` variant known |
-| G5 Candidate | deploying tree == `a0e4691`; CI green on that SHA (done) |
+| G5 Candidate | deploying tree == `1ee9620`; CI green on that SHA (done, run 37136593264) |
 
 ### 6.2 Steps (each: action → expected → rollback → risk)
 
@@ -113,19 +139,19 @@ tables, or real data shapes — that is precisely what Steps 1–3 of the plan (
 | 2 | **Backup (G1)**: confirm PITR/daily backups in dashboard and note the timestamp; take a logical dump (`pg_dump` of `public` + `auth` data) stored encrypted off-platform; save `prod-state.json` and generate + review `rollback-010.sql`; **restore the dump into a scratch project/DB and run `fingerprint.sql` to prove it** | verified restore, recorded timestamp/method | n/a | low (dump of PII — store encrypted) |
 | 3 | **Production-copy rehearsal**: on the scratch restore from Step 2 run Steps 7–8 below + `npm run test:db`-subset + `continuity`-style checks | same results as §5 on real data shape | discard scratch | none to prod |
 | 4 | Set Edge secrets (`supabase secrets set …`): `UNSUBSCRIBE_SECRET`, `CRON_SECRET` (≥32 random bytes each), `PUBLIC_APP_URL`, `ALLOWED_ORIGINS`; confirm provider key + `EMAIL_FROM` exist (names only) | `secrets list` shows names | `secrets unset` of the new names | low (new names only) |
-| 5 | **Deploy functions first** (closes the open email hole independently of the DB): `supabase functions deploy send-email` (verify-jwt on), `unsubscribe` and `process-scheduled-emails` (`--no-verify-jwt`, per `config.toml`) from the `a0e4691` tree | `functions list` shows new versions; `post-deploy-smoke.mjs` function checks: no creds 401, garbage 401, wrong cron secret 401, tampered/legacy unsubscribe 400 | redeploy previous version downloaded in Step 1 (**note: that restores the vulnerable code — only for a functional emergency**) | low; brief window where emails to opted-out members would 500 until Step 8 adds the `suppressed` status |
+| 5 | **Deploy functions first** (closes the open email hole independently of the DB): `supabase functions deploy send-email` (verify-jwt on), `unsubscribe` and `process-scheduled-emails` (`--no-verify-jwt`, per `config.toml`) from the `1ee9620` tree (functions identical to `a0e4691`) | `functions list` shows new versions; `post-deploy-smoke.mjs` function checks: no creds 401, garbage 401, wrong cron secret 401, tampered/legacy unsubscribe 400 | redeploy previous version downloaded in Step 1 (**note: that restores the vulnerable code — only for a functional emergency**) | low; brief window where emails to opted-out members would 500 until Step 8 adds the `suppressed` status |
 | 6 | **Test-account cleanup** *(only for accounts you confirm)*: ban (`ban_duration`) → set role `member`, status `rejected` → after reviewing what they created, delete if no `RESTRICT` dependents | no unexpected privileged account remains; sessions revoked | un-ban / restore role from snapshot | medium (identity must be certain; deletion irreversible → prefer demote+ban first) |
 | 7 | **Record history, then migrate** — `supabase link`; `supabase migration list`; `supabase migration repair --status applied 000 001 002 003 004 005 0060 0061 007 008` (**exactly the versions Step 1 shows are already reflected in the schema; no SQL runs**); `supabase db push --dry-run` must list **only 009 and 010** (otherwise STOP); then `supabase db push` | `Applying 009…, 010…`; second push `upToDate:true` | `psql -1 -f rollback-010.sql` (rehearsed, exact restore of policies/functions/grants) or PITR restore for data | **medium-high**: *never run `db push` before the repair (R-1)* |
 | 8 | **Verify DB**: re-run `inspect-readonly.sql` + `export-state` → classifier = 153/153 EXPECTED; `schema_integrity.sql`; `fingerprint.sql` vs the Step 1 baseline (only `prayer_requests` may differ) | identical data fingerprints | as Step 7 | low |
 | 9 | **Verify admin continuity**: a legitimate coordinator logs in, opens `/admin/pending`, approves/rejects a controlled pending account | works | rollback-010.sql | low |
-| 10 | **Rotate the email provider key** *(recommended; your approval)*: create new key → `supabase secrets set RESEND_API_KEY=…` (or SendGrid) → controlled test send → revoke the old key | send OK with new key; old key rejected | keep old key active until new one proven | medium (mail outage if mis-set) |
+| 10 | **Rotate the email provider key** *(only if §5a criteria say so; your approval)*: create new key → `supabase secrets set RESEND_API_KEY=…` (or SendGrid) → controlled test send → revoke the old key | send OK with new key; old key rejected | keep old key active until new one proven | medium (mail outage if mis-set) |
 | 11 | **Auth configuration** *(separate approval, per setting)*: Site URL/redirects = production; require email confirmation; password ≥ 8; CAPTCHA/rate limits — only to match the findings from Step 1 | settings match the approval model | restore the saved Auth config JSON | medium (can lock out sign-ups) |
-| 12 | **Frontend**: merge `a0e4691` (via PR you request) → Vercel production deploy; confirm env vars (`REACT_APP_SUPABASE_URL`, `…ANON_KEY`, `REACT_APP_PUBLIC_APP_URL`; VAPID unset) | build succeeds; app loads | Vercel "Instant Rollback" to the previous deployment | low (old frontend also works with the new DB) |
+| 12 | **Frontend**: merge `1ee9620` (via PR you request) → Vercel production deploy; confirm env vars (`REACT_APP_SUPABASE_URL`, `…ANON_KEY`, `REACT_APP_PUBLIC_APP_URL`; VAPID unset) | build succeeds; app loads | Vercel "Instant Rollback" to the previous deployment | low (old frontend also works with the new DB) |
 | 13 | **Security smoke** with controlled accounts: `ops/post-deploy-smoke.mjs` (anon, pending, member, coordinator, function auth); needs 3 controlled accounts (member, pending, coordinator) — creating them is a production data change that **needs your approval** and they are deleted afterwards | all PASS | delete accounts | low |
 | 14 | **Live email certification**: authorised send to a controlled mailbox → arrives → unsubscribe link opens on the real domain → preference flips → next send suppressed; check SPF/DKIM status in the provider | each hop verified | reset the test member's preference | low |
 | 15 | **Application smoke** in a browser with controlled accounts: login, pending gate, dashboard, member view, contacts, cells, meetings, attendance, email-admin, logout (no real records altered) | all work | — | low |
 | 16 | **Scheduler decision**: scheduled send has **no UI entry point** (nothing imports `scheduleEmail`), so no user-facing feature pretends to work. Create the `pg_cron` job (checklist §4) only if you want scheduled mail; else leave `process-scheduled-emails` unscheduled (it is secured) | — | `cron.unschedule` | low |
-| 17 | **Zoom / push** (not implemented, per instructions): today the Admin Panel shows a "Zoom Integration" tile and meetings include a Zoom form; every user is shown a push-permission prompt that errors when VAPID is unset. **Proposed minimal UI change (own tests + CI + your approval):** hide the Zoom tile/form and the push prompt unless configured | no feature advertises a missing backend | revert commit | low (executable change → new CI run required) |
+| 17 | **Zoom / push hidden** — **implemented and CI-verified in `1ee9620`** (default-off flags); ships with Step 12. Verify in production: no Zoom tile on `/admin`, `/admin/zoom` redirects home, no push prompt, Vercel has no `REACT_APP_ENABLE_ZOOM/PUSH` | no feature advertises a missing backend | revert commit / Vercel rollback | low |
 | 18 | Review logs (Edge Function + Auth + provider), finalise this document | no unexpected 4xx/5xx spikes | — | none |
 
 ### 6.3 Rollback summary
