@@ -105,6 +105,4 @@ jobs:
         run: |
           source "$RUNNER_TEMP/supabase.env"
           supabase db push --db-url "$DB_URL" | tee "$RUNNER_TEMP/push.txt"
-          grep -q '"upToDate":true' "$RUNNER_TEMP/push.txt"
-      - if: failure()
-        run: supabase status || true
+          grep -qiE 'up to date|"upToDate":true' "$RUNNER_TEMP/push.txt"
