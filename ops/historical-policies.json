@@ -1,0 +1,1598 @@
+[
+ {
+  "schema": "public",
+  "table": "admin_role_assignments",
+  "name": "admin_role_assignments_manage",
+  "definitions": [
+   [
+    "EXISTSSELECT1FROMprofilesWHEREprofiles.id=uidANDprofiles.role='coordinator'::text",
+    "EXISTSSELECT1FROMprofilesWHEREprofiles.id=uidANDprofiles.role='coordinator'::text",
+    "ALL",
+    "PERMISSIVE",
+    "public"
+   ]
+  ]
+ },
+ {
+  "schema": "public",
+  "table": "admin_role_assignments",
+  "name": "admin_role_assignments_read",
+  "definitions": [
+   [
+    "is_core_adminORuid=user_id",
+    "",
+    "SELECT",
+    "PERMISSIVE",
+    "public"
+   ]
+  ]
+ },
+ {
+  "schema": "public",
+  "table": "admin_role_permissions",
+  "name": "admin_role_permissions_manage",
+  "definitions": [
+   [
+    "EXISTSSELECT1FROMprofilesWHEREprofiles.id=uidANDprofiles.role='coordinator'::text",
+    "EXISTSSELECT1FROMprofilesWHEREprofiles.id=uidANDprofiles.role='coordinator'::text",
+    "ALL",
+    "PERMISSIVE",
+    "public"
+   ]
+  ]
+ },
+ {
+  "schema": "public",
+  "table": "admin_role_permissions",
+  "name": "admin_role_permissions_read",
+  "definitions": [
+   [
+    "is_core_admin",
+    "",
+    "SELECT",
+    "PERMISSIVE",
+    "public"
+   ]
+  ]
+ },
+ {
+  "schema": "public",
+  "table": "admin_roles",
+  "name": "admin_roles_manage",
+  "definitions": [
+   [
+    "EXISTSSELECT1FROMprofilesWHEREprofiles.id=uidANDprofiles.role='coordinator'::text",
+    "EXISTSSELECT1FROMprofilesWHEREprofiles.id=uidANDprofiles.role='coordinator'::text",
+    "ALL",
+    "PERMISSIVE",
+    "public"
+   ]
+  ]
+ },
+ {
+  "schema": "public",
+  "table": "admin_roles",
+  "name": "admin_roles_read",
+  "definitions": [
+   [
+    "is_core_admin",
+    "",
+    "SELECT",
+    "PERMISSIVE",
+    "public"
+   ]
+  ]
+ },
+ {
+  "schema": "public",
+  "table": "announcements",
+  "name": "ann_manage",
+  "definitions": [
+   [
+    "EXISTSSELECT1FROMprofilesWHEREprofiles.id=uidANDprofiles.role=ANYARRAY['admin'::text,'coordinator'::text,'cell_leader'::text]",
+    "",
+    "ALL",
+    "PERMISSIVE",
+    "public"
+   ]
+  ]
+ },
+ {
+  "schema": "public",
+  "table": "announcements",
+  "name": "ann_read",
+  "definitions": [
+   [
+    "role='authenticated'::text",
+    "",
+    "SELECT",
+    "PERMISSIVE",
+    "public"
+   ]
+  ]
+ },
+ {
+  "schema": "public",
+  "table": "attendance_imports",
+  "name": "attendance_imports_admin",
+  "definitions": [
+   [
+    "is_core_admin",
+    "is_core_admin",
+    "ALL",
+    "PERMISSIVE",
+    "public"
+   ]
+  ]
+ },
+ {
+  "schema": "public",
+  "table": "attendance_member_matches",
+  "name": "attendance_matches_admin",
+  "definitions": [
+   [
+    "is_core_admin",
+    "is_core_admin",
+    "ALL",
+    "PERMISSIVE",
+    "public"
+   ]
+  ]
+ },
+ {
+  "schema": "public",
+  "table": "books_of_month",
+  "name": "books_delete",
+  "definitions": [
+   [
+    "role='authenticated'::text",
+    "",
+    "DELETE",
+    "PERMISSIVE",
+    "public"
+   ]
+  ]
+ },
+ {
+  "schema": "public",
+  "table": "books_of_month",
+  "name": "books_insert",
+  "definitions": [
+   [
+    "",
+    "role='authenticated'::text",
+    "INSERT",
+    "PERMISSIVE",
+    "public"
+   ]
+  ]
+ },
+ {
+  "schema": "public",
+  "table": "books_of_month",
+  "name": "books_select",
+  "definitions": [
+   [
+    "true",
+    "",
+    "SELECT",
+    "PERMISSIVE",
+    "public"
+   ]
+  ]
+ },
+ {
+  "schema": "public",
+  "table": "books_of_month",
+  "name": "books_update",
+  "definitions": [
+   [
+    "role='authenticated'::text",
+    "",
+    "UPDATE",
+    "PERMISSIVE",
+    "public"
+   ]
+  ]
+ },
+ {
+  "schema": "public",
+  "table": "cells",
+  "name": "cells_manage",
+  "definitions": [
+   [
+    "EXISTSSELECT1FROMprofilesWHEREprofiles.id=uidANDprofiles.role='coordinator'::text",
+    "EXISTSSELECT1FROMprofilesWHEREprofiles.id=uidANDprofiles.role='coordinator'::text",
+    "ALL",
+    "PERMISSIVE",
+    "public"
+   ]
+  ]
+ },
+ {
+  "schema": "public",
+  "table": "cells",
+  "name": "cells_read",
+  "definitions": [
+   [
+    "role='authenticated'::text",
+    "",
+    "SELECT",
+    "PERMISSIVE",
+    "public"
+   ]
+  ]
+ },
+ {
+  "schema": "public",
+  "table": "confession_declarations",
+  "name": "declarations_admin_read",
+  "definitions": [
+   [
+    "EXISTSSELECT1FROMprofilesWHEREprofiles.id=uidANDprofiles.role=ANYARRAY['admin'::text,'coordinator'::text]",
+    "",
+    "SELECT",
+    "PERMISSIVE",
+    "public"
+   ]
+  ]
+ },
+ {
+  "schema": "public",
+  "table": "confession_declarations",
+  "name": "declarations_own",
+  "definitions": [
+   [
+    "uid=user_id",
+    "",
+    "ALL",
+    "PERMISSIVE",
+    "public"
+   ]
+  ]
+ },
+ {
+  "schema": "public",
+  "table": "confessions",
+  "name": "confessions_manage",
+  "definitions": [
+   [
+    "EXISTSSELECT1FROMprofilesWHEREprofiles.id=uidANDprofiles.role=ANYARRAY['admin'::text,'coordinator'::text]",
+    "",
+    "ALL",
+    "PERMISSIVE",
+    "public"
+   ]
+  ]
+ },
+ {
+  "schema": "public",
+  "table": "confessions",
+  "name": "confessions_read",
+  "definitions": [
+   [
+    "role='authenticated'::textANDis_active=true",
+    "",
+    "SELECT",
+    "PERMISSIVE",
+    "public"
+   ]
+  ]
+ },
+ {
+  "schema": "public",
+  "table": "contact_audit_log",
+  "name": "contact_audit_log_insert",
+  "definitions": [
+   [
+    "",
+    "changed_by=uid",
+    "INSERT",
+    "PERMISSIVE",
+    "public"
+   ]
+  ]
+ },
+ {
+  "schema": "public",
+  "table": "contact_audit_log",
+  "name": "contact_audit_log_read",
+  "definitions": [
+   [
+    "is_core_admin",
+    "",
+    "SELECT",
+    "PERMISSIVE",
+    "public"
+   ]
+  ]
+ },
+ {
+  "schema": "public",
+  "table": "contact_follow_ups",
+  "name": "contact_follow_ups_insert",
+  "definitions": [
+   [
+    "",
+    "is_core_adminOREXISTSSELECT1FROMcontactscWHEREc.id=contact_follow_ups.contact_idANDis_cell_leader_ofc.cell_idORc.logged_by=uid",
+    "INSERT",
+    "PERMISSIVE",
+    "public"
+   ]
+  ]
+ },
+ {
+  "schema": "public",
+  "table": "contact_follow_ups",
+  "name": "contact_follow_ups_read",
+  "definitions": [
+   [
+    "is_core_adminORassigned_to=uidOREXISTSSELECT1FROMcontactscWHEREc.id=contact_follow_ups.contact_idANDis_cell_leader_ofc.cell_idORc.logged_by=uid",
+    "",
+    "SELECT",
+    "PERMISSIVE",
+    "public"
+   ]
+  ]
+ },
+ {
+  "schema": "public",
+  "table": "contact_follow_ups",
+  "name": "contact_follow_ups_update",
+  "definitions": [
+   [
+    "is_core_adminOREXISTSSELECT1FROMcontactscWHEREc.id=contact_follow_ups.contact_idANDis_cell_leader_ofc.cell_idORc.logged_by=uid",
+    "",
+    "UPDATE",
+    "PERMISSIVE",
+    "public"
+   ]
+  ]
+ },
+ {
+  "schema": "public",
+  "table": "contact_tags",
+  "name": "contact_tags_delete",
+  "definitions": [
+   [
+    "is_core_adminOREXISTSSELECT1FROMcontactscWHEREc.id=contact_tags.contact_idANDis_cell_leader_ofc.cell_idORc.logged_by=uid",
+    "",
+    "DELETE",
+    "PERMISSIVE",
+    "public"
+   ]
+  ]
+ },
+ {
+  "schema": "public",
+  "table": "contact_tags",
+  "name": "contact_tags_insert",
+  "definitions": [
+   [
+    "",
+    "is_core_adminOREXISTSSELECT1FROMcontactscWHEREc.id=contact_tags.contact_idANDis_cell_leader_ofc.cell_idORc.logged_by=uid",
+    "INSERT",
+    "PERMISSIVE",
+    "public"
+   ]
+  ]
+ },
+ {
+  "schema": "public",
+  "table": "contact_tags",
+  "name": "contact_tags_read",
+  "definitions": [
+   [
+    "is_core_adminOREXISTSSELECT1FROMcontactscWHEREc.id=contact_tags.contact_idANDis_cell_leader_ofc.cell_idORc.logged_by=uid",
+    "",
+    "SELECT",
+    "PERMISSIVE",
+    "public"
+   ]
+  ]
+ },
+ {
+  "schema": "public",
+  "table": "contacts",
+  "name": "contacts_admin",
+  "definitions": []
+ },
+ {
+  "schema": "public",
+  "table": "contacts",
+  "name": "contacts_delete",
+  "definitions": [
+   [
+    "is_core_adminORlogged_by=uid",
+    "",
+    "DELETE",
+    "PERMISSIVE",
+    "public"
+   ]
+  ]
+ },
+ {
+  "schema": "public",
+  "table": "contacts",
+  "name": "contacts_insert",
+  "definitions": [
+   [
+    "",
+    "is_core_adminORis_cell_leader_ofcell_id",
+    "INSERT",
+    "PERMISSIVE",
+    "public"
+   ]
+  ]
+ },
+ {
+  "schema": "public",
+  "table": "contacts",
+  "name": "contacts_leader",
+  "definitions": []
+ },
+ {
+  "schema": "public",
+  "table": "contacts",
+  "name": "contacts_member_read",
+  "definitions": []
+ },
+ {
+  "schema": "public",
+  "table": "contacts",
+  "name": "contacts_read",
+  "definitions": [
+   [
+    "is_core_adminORis_cell_leader_ofcell_idORlogged_by=uid",
+    "",
+    "SELECT",
+    "PERMISSIVE",
+    "public"
+   ]
+  ]
+ },
+ {
+  "schema": "public",
+  "table": "contacts",
+  "name": "contacts_update",
+  "definitions": [
+   [
+    "is_core_adminORis_cell_leader_ofcell_idORlogged_by=uid",
+    "is_core_adminORis_cell_leader_ofcell_idORlogged_by=uid",
+    "UPDATE",
+    "PERMISSIVE",
+    "public"
+   ]
+  ]
+ },
+ {
+  "schema": "public",
+  "table": "devotional_daily_pages",
+  "name": "devotional_daily_pages_delete_admin",
+  "definitions": [
+   [
+    "is_devotional_admin",
+    "",
+    "DELETE",
+    "PERMISSIVE",
+    "public"
+   ]
+  ]
+ },
+ {
+  "schema": "public",
+  "table": "devotional_daily_pages",
+  "name": "devotional_daily_pages_insert_admin",
+  "definitions": [
+   [
+    "",
+    "is_devotional_admin",
+    "INSERT",
+    "PERMISSIVE",
+    "public"
+   ]
+  ]
+ },
+ {
+  "schema": "public",
+  "table": "devotional_daily_pages",
+  "name": "devotional_daily_pages_select",
+  "definitions": [
+   [
+    "role='authenticated'::text",
+    "",
+    "SELECT",
+    "PERMISSIVE",
+    "public"
+   ]
+  ]
+ },
+ {
+  "schema": "public",
+  "table": "devotional_daily_pages",
+  "name": "devotional_daily_pages_update_admin",
+  "definitions": [
+   [
+    "is_devotional_admin",
+    "is_devotional_admin",
+    "UPDATE",
+    "PERMISSIVE",
+    "public"
+   ]
+  ]
+ },
+ {
+  "schema": "public",
+  "table": "devotional_views",
+  "name": "devotional_views_insert_own",
+  "definitions": [
+   [
+    "",
+    "uid=member_id",
+    "INSERT",
+    "PERMISSIVE",
+    "public"
+   ]
+  ]
+ },
+ {
+  "schema": "public",
+  "table": "devotional_views",
+  "name": "devotional_views_select_own_or_admin",
+  "definitions": [
+   [
+    "uid=member_idORis_devotional_admin",
+    "",
+    "SELECT",
+    "PERMISSIVE",
+    "public"
+   ]
+  ]
+ },
+ {
+  "schema": "public",
+  "table": "devotional_views",
+  "name": "devotional_views_update_own",
+  "definitions": [
+   [
+    "uid=member_id",
+    "uid=member_id",
+    "UPDATE",
+    "PERMISSIVE",
+    "public"
+   ]
+  ]
+ },
+ {
+  "schema": "public",
+  "table": "drive_link_metadata",
+  "name": "drive_links_manage",
+  "definitions": [
+   [
+    "owner_id=uidORis_core_admin",
+    "owner_id=uidORis_core_admin",
+    "ALL",
+    "PERMISSIVE",
+    "public"
+   ]
+  ]
+ },
+ {
+  "schema": "public",
+  "table": "drive_link_metadata",
+  "name": "drive_links_read",
+  "definitions": [
+   [
+    "role='authenticated'::text",
+    "",
+    "SELECT",
+    "PERMISSIVE",
+    "public"
+   ]
+  ]
+ },
+ {
+  "schema": "public",
+  "table": "email_log",
+  "name": "email_log_admin_manage",
+  "definitions": [
+   [
+    "EXISTSSELECT1FROMprofilesWHEREprofiles.id=uidANDprofiles.role=ANYARRAY['admin'::text,'coordinator'::text]",
+    "EXISTSSELECT1FROMprofilesWHEREprofiles.id=uidANDprofiles.role=ANYARRAY['admin'::text,'coordinator'::text]",
+    "ALL",
+    "PERMISSIVE",
+    "public"
+   ]
+  ]
+ },
+ {
+  "schema": "public",
+  "table": "email_log",
+  "name": "email_log_admin_read",
+  "definitions": [
+   [
+    "EXISTSSELECT1FROMprofilesWHEREprofiles.id=uidANDprofiles.role=ANYARRAY['admin'::text,'coordinator'::text]",
+    "",
+    "SELECT",
+    "PERMISSIVE",
+    "public"
+   ]
+  ]
+ },
+ {
+  "schema": "public",
+  "table": "email_log",
+  "name": "email_log_own_read",
+  "definitions": [
+   [
+    "uid=member_id",
+    "",
+    "SELECT",
+    "PERMISSIVE",
+    "public"
+   ]
+  ]
+ },
+ {
+  "schema": "public",
+  "table": "email_notification_log",
+  "name": "email_log_admin_write",
+  "definitions": [
+   [
+    "",
+    "is_core_admin",
+    "INSERT",
+    "PERMISSIVE",
+    "public"
+   ]
+  ]
+ },
+ {
+  "schema": "public",
+  "table": "email_notification_log",
+  "name": "email_log_read",
+  "definitions": [
+   [
+    "is_core_adminORuser_id=uid",
+    "",
+    "SELECT",
+    "PERMISSIVE",
+    "public"
+   ]
+  ]
+ },
+ {
+  "schema": "public",
+  "table": "email_preferences",
+  "name": "email_preferences_own",
+  "definitions": []
+ },
+ {
+  "schema": "public",
+  "table": "email_preferences",
+  "name": "email_prefs_admin_read",
+  "definitions": [
+   [
+    "EXISTSSELECT1FROMprofilesWHEREprofiles.id=uidANDprofiles.role=ANYARRAY['admin'::text,'coordinator'::text]",
+    "",
+    "SELECT",
+    "PERMISSIVE",
+    "public"
+   ]
+  ]
+ },
+ {
+  "schema": "public",
+  "table": "email_preferences",
+  "name": "email_prefs_own_read",
+  "definitions": [
+   [
+    "uid=member_id",
+    "",
+    "SELECT",
+    "PERMISSIVE",
+    "public"
+   ]
+  ]
+ },
+ {
+  "schema": "public",
+  "table": "email_preferences",
+  "name": "email_prefs_own_write",
+  "definitions": [
+   [
+    "uid=member_id",
+    "uid=member_id",
+    "ALL",
+    "PERMISSIVE",
+    "public"
+   ]
+  ]
+ },
+ {
+  "schema": "public",
+  "table": "event_rsvps",
+  "name": "rsvps_own",
+  "definitions": [
+   [
+    "uid=user_id",
+    "",
+    "ALL",
+    "PERMISSIVE",
+    "public"
+   ]
+  ]
+ },
+ {
+  "schema": "public",
+  "table": "events",
+  "name": "events_manage",
+  "definitions": [
+   [
+    "EXISTSSELECT1FROMprofilesWHEREprofiles.id=uidANDprofiles.role=ANYARRAY['admin'::text,'coordinator'::text]",
+    "",
+    "ALL",
+    "PERMISSIVE",
+    "public"
+   ]
+  ]
+ },
+ {
+  "schema": "public",
+  "table": "events",
+  "name": "events_read",
+  "definitions": [
+   [
+    "role='authenticated'::text",
+    "",
+    "SELECT",
+    "PERMISSIVE",
+    "public"
+   ]
+  ]
+ },
+ {
+  "schema": "public",
+  "table": "habit_entries",
+  "name": "coordinators read all entries",
+  "definitions": [
+   [
+    "uid=user_idOREXISTSSELECT1FROMprofilesWHEREprofiles.id=uidANDprofiles.role=ANYARRAY['coordinator'::text,'admin'::text]",
+    "",
+    "SELECT",
+    "PERMISSIVE",
+    "public"
+   ]
+  ]
+ },
+ {
+  "schema": "public",
+  "table": "habit_entries",
+  "name": "members own entries",
+  "definitions": [
+   [
+    "uid=user_id",
+    "",
+    "ALL",
+    "PERMISSIVE",
+    "public"
+   ]
+  ]
+ },
+ {
+  "schema": "public",
+  "table": "habit_templates",
+  "name": "all authenticated read habits",
+  "definitions": [
+   [
+    "role='authenticated'::text",
+    "",
+    "SELECT",
+    "PERMISSIVE",
+    "public"
+   ]
+  ]
+ },
+ {
+  "schema": "public",
+  "table": "habit_templates",
+  "name": "coordinators manage habit templates",
+  "definitions": [
+   [
+    "EXISTSSELECT1FROMprofilesWHEREprofiles.id=uidANDprofiles.role=ANYARRAY['coordinator'::text,'admin'::text]",
+    "",
+    "ALL",
+    "PERMISSIVE",
+    "public"
+   ]
+  ]
+ },
+ {
+  "schema": "public",
+  "table": "meeting_attendances",
+  "name": "attendance_admin",
+  "definitions": []
+ },
+ {
+  "schema": "public",
+  "table": "meeting_attendances",
+  "name": "attendance_own",
+  "definitions": []
+ },
+ {
+  "schema": "public",
+  "table": "meetings",
+  "name": "meetings_cell_read",
+  "definitions": [
+   [
+    "visibility='cell'::textANDEXISTSSELECT1FROMprofilesWHEREprofiles.id=uidANDprofiles.cell_id=meetings.cell_id",
+    "",
+    "SELECT",
+    "PERMISSIVE",
+    "public"
+   ]
+  ]
+ },
+ {
+  "schema": "public",
+  "table": "meetings",
+  "name": "meetings_leaders_read",
+  "definitions": [
+   [
+    "visibility='leaders'::textANDEXISTSSELECT1FROMprofilesWHEREprofiles.id=uidANDprofiles.role=ANYARRAY['cell_leader'::text,'admin'::text,'coordinator'::text]",
+    "",
+    "SELECT",
+    "PERMISSIVE",
+    "public"
+   ]
+  ]
+ },
+ {
+  "schema": "public",
+  "table": "meetings",
+  "name": "meetings_manage",
+  "definitions": [
+   [
+    "EXISTSSELECT1FROMprofilesWHEREprofiles.id=uidANDprofiles.role=ANYARRAY['admin'::text,'coordinator'::text,'cell_leader'::text]",
+    "",
+    "ALL",
+    "PERMISSIVE",
+    "public"
+   ]
+  ]
+ },
+ {
+  "schema": "public",
+  "table": "meetings",
+  "name": "meetings_public_read",
+  "definitions": [
+   [
+    "role='authenticated'::textANDvisibility='public'::text",
+    "",
+    "SELECT",
+    "PERMISSIVE",
+    "public"
+   ]
+  ]
+ },
+ {
+  "schema": "public",
+  "table": "monthly_devotionals",
+  "name": "monthly_devotionals_delete_admin",
+  "definitions": [
+   [
+    "is_devotional_admin",
+    "",
+    "DELETE",
+    "PERMISSIVE",
+    "public"
+   ]
+  ]
+ },
+ {
+  "schema": "public",
+  "table": "monthly_devotionals",
+  "name": "monthly_devotionals_insert_admin",
+  "definitions": [
+   [
+    "",
+    "uid=created_byANDis_devotional_admin",
+    "INSERT",
+    "PERMISSIVE",
+    "public"
+   ]
+  ]
+ },
+ {
+  "schema": "public",
+  "table": "monthly_devotionals",
+  "name": "monthly_devotionals_select",
+  "definitions": [
+   [
+    "role='authenticated'::text",
+    "",
+    "SELECT",
+    "PERMISSIVE",
+    "public"
+   ]
+  ]
+ },
+ {
+  "schema": "public",
+  "table": "monthly_devotionals",
+  "name": "monthly_devotionals_update_admin",
+  "definitions": [
+   [
+    "is_devotional_admin",
+    "is_devotional_admin",
+    "UPDATE",
+    "PERMISSIVE",
+    "public"
+   ]
+  ]
+ },
+ {
+  "schema": "public",
+  "table": "profiles",
+  "name": "leaders_manage_profiles",
+  "definitions": [
+   [
+    "EXISTSSELECT1FROMprofilespWHEREp.id=uidANDp.role=ANYARRAY['admin'::text,'coordinator'::text,'cell_leader'::text]",
+    "",
+    "UPDATE",
+    "PERMISSIVE",
+    "public"
+   ]
+  ]
+ },
+ {
+  "schema": "public",
+  "table": "profiles",
+  "name": "profiles_coordinator",
+  "definitions": [
+   [
+    "EXISTSSELECT1FROMprofilesp2WHEREp2.id=uidANDp2.role='coordinator'::text",
+    "EXISTSSELECT1FROMprofilesp2WHEREp2.id=uidANDp2.role='coordinator'::text",
+    "ALL",
+    "PERMISSIVE",
+    "public"
+   ]
+  ]
+ },
+ {
+  "schema": "public",
+  "table": "profiles",
+  "name": "profiles_read",
+  "definitions": []
+ },
+ {
+  "schema": "public",
+  "table": "profiles",
+  "name": "profiles_select",
+  "definitions": [
+   [
+    "role='authenticated'::text",
+    "",
+    "SELECT",
+    "PERMISSIVE",
+    "public"
+   ]
+  ]
+ },
+ {
+  "schema": "public",
+  "table": "profiles",
+  "name": "profiles_update",
+  "definitions": []
+ },
+ {
+  "schema": "public",
+  "table": "profiles",
+  "name": "profiles_update_own",
+  "definitions": [
+   [
+    "id=uid",
+    "id=uid",
+    "UPDATE",
+    "PERMISSIVE",
+    "public"
+   ]
+  ]
+ },
+ {
+  "schema": "public",
+  "table": "push_notification_log",
+  "name": "push_log_admin_read",
+  "definitions": [
+   [
+    "EXISTSSELECT1FROMprofilesWHEREprofiles.id=uidANDprofiles.role=ANYARRAY['admin'::text,'coordinator'::text]",
+    "",
+    "SELECT",
+    "PERMISSIVE",
+    "public"
+   ]
+  ]
+ },
+ {
+  "schema": "public",
+  "table": "push_notification_log",
+  "name": "push_log_admin_write",
+  "definitions": []
+ },
+ {
+  "schema": "public",
+  "table": "push_notification_log",
+  "name": "push_log_own_read",
+  "definitions": [
+   [
+    "uid=member_id",
+    "",
+    "SELECT",
+    "PERMISSIVE",
+    "public"
+   ]
+  ]
+ },
+ {
+  "schema": "public",
+  "table": "push_notification_log",
+  "name": "push_log_read",
+  "definitions": []
+ },
+ {
+  "schema": "public",
+  "table": "push_subscriptions",
+  "name": "push_subs_admin_read",
+  "definitions": [
+   [
+    "EXISTSSELECT1FROMprofilesWHEREprofiles.id=uidANDprofiles.role=ANYARRAY['admin'::text,'coordinator'::text]",
+    "",
+    "SELECT",
+    "PERMISSIVE",
+    "public"
+   ]
+  ]
+ },
+ {
+  "schema": "public",
+  "table": "push_subscriptions",
+  "name": "push_subs_own_delete",
+  "definitions": [
+   [
+    "uid=member_id",
+    "",
+    "DELETE",
+    "PERMISSIVE",
+    "public"
+   ]
+  ]
+ },
+ {
+  "schema": "public",
+  "table": "push_subscriptions",
+  "name": "push_subs_own_read",
+  "definitions": [
+   [
+    "uid=member_id",
+    "",
+    "SELECT",
+    "PERMISSIVE",
+    "public"
+   ]
+  ]
+ },
+ {
+  "schema": "public",
+  "table": "push_subscriptions",
+  "name": "push_subscriptions_own",
+  "definitions": []
+ },
+ {
+  "schema": "public",
+  "table": "status_settings",
+  "name": "status_settings_manage",
+  "definitions": [
+   [
+    "is_core_admin",
+    "is_core_admin",
+    "ALL",
+    "PERMISSIVE",
+    "public"
+   ]
+  ]
+ },
+ {
+  "schema": "public",
+  "table": "status_settings",
+  "name": "status_settings_read",
+  "definitions": [
+   [
+    "role='authenticated'::text",
+    "",
+    "SELECT",
+    "PERMISSIVE",
+    "public"
+   ]
+  ]
+ },
+ {
+  "schema": "public",
+  "table": "status_settings",
+  "name": "statuses_manage",
+  "definitions": []
+ },
+ {
+  "schema": "public",
+  "table": "status_settings",
+  "name": "statuses_read",
+  "definitions": []
+ },
+ {
+  "schema": "public",
+  "table": "tags_settings",
+  "name": "tags_manage",
+  "definitions": []
+ },
+ {
+  "schema": "public",
+  "table": "tags_settings",
+  "name": "tags_read",
+  "definitions": []
+ },
+ {
+  "schema": "public",
+  "table": "tags_settings",
+  "name": "tags_settings_manage",
+  "definitions": [
+   [
+    "is_core_admin",
+    "is_core_admin",
+    "ALL",
+    "PERMISSIVE",
+    "public"
+   ]
+  ]
+ },
+ {
+  "schema": "public",
+  "table": "tags_settings",
+  "name": "tags_settings_read",
+  "definitions": [
+   [
+    "role='authenticated'::text",
+    "",
+    "SELECT",
+    "PERMISSIVE",
+    "public"
+   ]
+  ]
+ },
+ {
+  "schema": "public",
+  "table": "testimonies",
+  "name": "testimonies_cell",
+  "definitions": []
+ },
+ {
+  "schema": "public",
+  "table": "testimonies",
+  "name": "testimonies_delete",
+  "definitions": [
+   [
+    "author_id=uid",
+    "",
+    "DELETE",
+    "PERMISSIVE",
+    "public"
+   ]
+  ]
+ },
+ {
+  "schema": "public",
+  "table": "testimonies",
+  "name": "testimonies_insert",
+  "definitions": [
+   [
+    "",
+    "author_id=uid",
+    "INSERT",
+    "PERMISSIVE",
+    "public"
+   ]
+  ]
+ },
+ {
+  "schema": "public",
+  "table": "testimonies",
+  "name": "testimonies_members",
+  "definitions": []
+ },
+ {
+  "schema": "public",
+  "table": "testimonies",
+  "name": "testimonies_own",
+  "definitions": []
+ },
+ {
+  "schema": "public",
+  "table": "testimonies",
+  "name": "testimonies_select",
+  "definitions": [
+   [
+    "author_id=uidORstatus='approved'::textANDvisibility='public'::textORvisibility='members'::textANDrole='authenticated'::textORvisibility='cell'::textANDrole='authenticated'::textORrole='authenticated'::textANDEXISTSSELECT1FROMuser_profilesWHEREuser_profiles.user_id=uid",
+    "",
+    "SELECT",
+    "PERMISSIVE",
+    "public"
+   ]
+  ]
+ },
+ {
+  "schema": "public",
+  "table": "testimonies",
+  "name": "testimonies_update",
+  "definitions": [
+   [
+    "author_id=uid",
+    "author_id=uid",
+    "UPDATE",
+    "PERMISSIVE",
+    "public"
+   ]
+  ]
+ },
+ {
+  "schema": "public",
+  "table": "testimony_comments",
+  "name": "comments_delete",
+  "definitions": [
+   [
+    "author_id=uid",
+    "",
+    "DELETE",
+    "PERMISSIVE",
+    "public"
+   ]
+  ]
+ },
+ {
+  "schema": "public",
+  "table": "testimony_comments",
+  "name": "comments_insert",
+  "definitions": [
+   [
+    "",
+    "author_id=uid",
+    "INSERT",
+    "PERMISSIVE",
+    "public"
+   ]
+  ]
+ },
+ {
+  "schema": "public",
+  "table": "testimony_comments",
+  "name": "comments_select",
+  "definitions": [
+   [
+    "role='authenticated'::text",
+    "",
+    "SELECT",
+    "PERMISSIVE",
+    "public"
+   ]
+  ]
+ },
+ {
+  "schema": "public",
+  "table": "testimony_reactions",
+  "name": "reactions_delete",
+  "definitions": [
+   [
+    "user_id=uid",
+    "",
+    "DELETE",
+    "PERMISSIVE",
+    "public"
+   ]
+  ]
+ },
+ {
+  "schema": "public",
+  "table": "testimony_reactions",
+  "name": "reactions_insert",
+  "definitions": [
+   [
+    "",
+    "user_id=uid",
+    "INSERT",
+    "PERMISSIVE",
+    "public"
+   ]
+  ]
+ },
+ {
+  "schema": "public",
+  "table": "testimony_reactions",
+  "name": "reactions_select",
+  "definitions": [
+   [
+    "role='authenticated'::text",
+    "",
+    "SELECT",
+    "PERMISSIVE",
+    "public"
+   ]
+  ]
+ },
+ {
+  "schema": "public",
+  "table": "user_profiles",
+  "name": "profiles_delete",
+  "definitions": [
+   [
+    "uid=user_id",
+    "",
+    "DELETE",
+    "PERMISSIVE",
+    "public"
+   ]
+  ]
+ },
+ {
+  "schema": "public",
+  "table": "user_profiles",
+  "name": "profiles_insert",
+  "definitions": [
+   [
+    "",
+    "uid=user_id",
+    "INSERT",
+    "PERMISSIVE",
+    "public"
+   ]
+  ]
+ },
+ {
+  "schema": "public",
+  "table": "user_profiles",
+  "name": "profiles_select",
+  "definitions": [
+   [
+    "role='authenticated'::text",
+    "",
+    "SELECT",
+    "PERMISSIVE",
+    "public"
+   ]
+  ]
+ },
+ {
+  "schema": "public",
+  "table": "user_profiles",
+  "name": "profiles_update",
+  "definitions": [
+   [
+    "uid=user_id",
+    "uid=user_id",
+    "UPDATE",
+    "PERMISSIVE",
+    "public"
+   ]
+  ]
+ },
+ {
+  "schema": "public",
+  "table": "user_profiles",
+  "name": "user_profiles_admin_read",
+  "definitions": [
+   [
+    "EXISTSSELECT1FROMprofilesWHEREprofiles.id=uidANDprofiles.role=ANYARRAY['admin'::text,'coordinator'::text]",
+    "",
+    "SELECT",
+    "PERMISSIVE",
+    "public"
+   ]
+  ]
+ },
+ {
+  "schema": "public",
+  "table": "user_profiles",
+  "name": "user_profiles_own",
+  "definitions": [
+   [
+    "uid=user_id",
+    "",
+    "ALL",
+    "PERMISSIVE",
+    "public"
+   ]
+  ]
+ },
+ {
+  "schema": "public",
+  "table": "user_profiles",
+  "name": "user_profiles_own_insert",
+  "definitions": []
+ },
+ {
+  "schema": "public",
+  "table": "user_profiles",
+  "name": "user_profiles_own_select",
+  "definitions": []
+ },
+ {
+  "schema": "public",
+  "table": "user_profiles",
+  "name": "user_profiles_own_update",
+  "definitions": []
+ },
+ {
+  "schema": "public",
+  "table": "weekly_messages",
+  "name": "create messages by scope",
+  "definitions": [
+   [
+    "",
+    "uid=created_byANDscope::text='personal'::textOREXISTSSELECT1FROMprofilesWHEREprofiles.id=uidANDprofiles.role=ANYARRAY['coordinator'::text,'admin'::text]",
+    "INSERT",
+    "PERMISSIVE",
+    "public"
+   ]
+  ]
+ },
+ {
+  "schema": "public",
+  "table": "weekly_messages",
+  "name": "delete own or admin",
+  "definitions": [
+   [
+    "uid=created_byOREXISTSSELECT1FROMprofilesWHEREprofiles.id=uidANDprofiles.role=ANYARRAY['coordinator'::text,'admin'::text]",
+    "",
+    "DELETE",
+    "PERMISSIVE",
+    "public"
+   ]
+  ]
+ },
+ {
+  "schema": "public",
+  "table": "weekly_messages",
+  "name": "read org or own personal messages",
+  "definitions": [
+   [
+    "scope::text='org'::textORuid=created_by",
+    "",
+    "SELECT",
+    "PERMISSIVE",
+    "public"
+   ]
+  ]
+ },
+ {
+  "schema": "public",
+  "table": "weekly_messages",
+  "name": "update own or admin",
+  "definitions": [
+   [
+    "uid=created_byOREXISTSSELECT1FROMprofilesWHEREprofiles.id=uidANDprofiles.role=ANYARRAY['coordinator'::text,'admin'::text]",
+    "",
+    "UPDATE",
+    "PERMISSIVE",
+    "public"
+   ]
+  ]
+ },
+ {
+  "schema": "public",
+  "table": "zoom_attendance",
+  "name": "zoom_attendance_admin_read",
+  "definitions": [
+   [
+    "EXISTSSELECT1FROMprofilesWHEREprofiles.id=uidANDprofiles.role=ANYARRAY['admin'::text,'coordinator'::text,'cell_leader'::text]",
+    "",
+    "SELECT",
+    "PERMISSIVE",
+    "public"
+   ]
+  ]
+ },
+ {
+  "schema": "public",
+  "table": "zoom_settings",
+  "name": "zoom_settings_admin",
+  "definitions": [
+   [
+    "EXISTSSELECT1FROMprofilesWHEREprofiles.id=uidANDprofiles.role=ANYARRAY['admin'::text,'coordinator'::text]",
+    "",
+    "ALL",
+    "PERMISSIVE",
+    "public"
+   ]
+  ]
+ },
+ {
+  "schema": "storage",
+  "table": "objects",
+  "name": "devotional_images_admin_update",
+  "definitions": [
+   [
+    "bucket_id='devotional-images'::textANDis_devotional_admin",
+    "bucket_id='devotional-images'::textANDis_devotional_admin",
+    "UPDATE",
+    "PERMISSIVE",
+    "public"
+   ]
+  ]
+ },
+ {
+  "schema": "storage",
+  "table": "objects",
+  "name": "devotional_images_admin_write",
+  "definitions": [
+   [
+    "",
+    "bucket_id='devotional-images'::textANDis_devotional_admin",
+    "INSERT",
+    "PERMISSIVE",
+    "public"
+   ]
+  ]
+ },
+ {
+  "schema": "storage",
+  "table": "objects",
+  "name": "devotional_images_public_read",
+  "definitions": [
+   [
+    "bucket_id='devotional-images'::text",
+    "",
+    "SELECT",
+    "PERMISSIVE",
+    "public"
+   ]
+  ]
+ },
+ {
+  "schema": "storage",
+  "table": "objects",
+  "name": "testimony_images_delete",
+  "definitions": [
+   [
+    "bucket_id='testimony-images'::textANDuid::text=foldernamename[1]",
+    "",
+    "DELETE",
+    "PERMISSIVE",
+    "public"
+   ]
+  ]
+ },
+ {
+  "schema": "storage",
+  "table": "objects",
+  "name": "testimony_images_insert",
+  "definitions": [
+   [
+    "",
+    "bucket_id='testimony-images'::textANDrole='authenticated'::text",
+    "INSERT",
+    "PERMISSIVE",
+    "public"
+   ]
+  ]
+ },
+ {
+  "schema": "storage",
+  "table": "objects",
+  "name": "testimony_images_select",
+  "definitions": [
+   [
+    "bucket_id='testimony-images'::text",
+    "",
+    "SELECT",
+    "PERMISSIVE",
+    "public"
+   ]
+  ]
+ }
+]
