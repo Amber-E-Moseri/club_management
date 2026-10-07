@@ -102,13 +102,8 @@ export async function trackEmailOpen(messageId: string): Promise<void> {
  * Uses btoa to encode a base64 token (server validates full JWT; this is just
  * the client payload — the edge function signs it with UNSUBSCRIBE_SECRET).
  */
-export function buildUnsubscribeUrl(memberId: string, notifType: EmailTemplateType, origin?: string): string {
-  const json = JSON.stringify({ memberId, notifType, ts: Date.now() });
-  const payload = typeof btoa === 'function'
-    ? btoa(json)
-    : Buffer.from(json).toString('base64');
-  const base = origin ?? getSupabaseFunctionUrl('unsubscribe');
-  return `${base}?token=${encodeURIComponent(payload)}&type=${notifType}`;
+export function buildUnsubscribeUrl(_memberId: string, _notifType: EmailTemplateType, origin?: string): string {
+  return `${origin ?? getAppOrigin()}/email-preferences`;
 }
 
 export function getAppOrigin(): string {

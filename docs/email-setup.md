@@ -1,6 +1,6 @@
 # Email Setup — Gmail via App Password
 
-BLW York Hub sends transactional email through a small Vercel serverless function (`api/email-relay.ts`) that relays messages via Gmail SMTP. This avoids the need for a third-party provider (Resend, SendGrid) and lets you send from `blwyorkuni@gmail.com` directly.
+BLW York Hub sends transactional email through a small Vercel serverless function (`api/email-relay.ts`) that relays messages via Gmail SMTP. This avoids the need for a third-party provider (Resend, SendGrid) and lets you send from `club-sender@example.com` directly.
 
 ## Architecture
 
@@ -18,7 +18,7 @@ The Edge Function checks providers in order:
 
 ## One-time Google setup
 
-1. Sign in to [myaccount.google.com](https://myaccount.google.com) as `blwyorkuni@gmail.com`.
+1. Sign in to [myaccount.google.com](https://myaccount.google.com) as `club-sender@example.com`.
 2. Go to **Security → 2-Step Verification** and enable it (required for App Passwords).
 3. Go to **Security → App Passwords** (search "App passwords" if not visible).
 4. Create a new App Password:
@@ -34,7 +34,7 @@ In the Vercel dashboard → your project → **Settings → Environment Variable
 
 | Variable | Value |
 |---|---|
-| `GMAIL_USER` | `blwyorkuni@gmail.com` |
+| `GMAIL_USER` | `club-sender@example.com` |
 | `GMAIL_APP_PASSWORD` | The 16-char App Password from Google |
 | `EMAIL_RELAY_SECRET` | A random 32-char secret (generate with `openssl rand -hex 16`) |
 
@@ -48,7 +48,7 @@ In the Supabase dashboard → your project → **Edge Functions → Manage secre
 |---|---|
 | `EMAIL_RELAY_URL` | `https://<your-vercel-app>.vercel.app/api/email-relay` |
 | `EMAIL_RELAY_SECRET` | Same token as the Vercel variable above |
-| `EMAIL_FROM` | `BLW York Hub <blwyorkuni@gmail.com>` |
+| `EMAIL_FROM` | `BLW York Hub <club-sender@example.com>` |
 
 ## Verifying the relay is working
 

@@ -17,7 +17,7 @@ export async function upsertEmailPreferences(
 ): Promise<EmailPreferences> {
   const { data, error } = await supabase
     .from('email_preferences')
-    .upsert({ member_id: memberId, ...prefs }, { onConflict: 'member_id' })
+    .upsert({ user_id: memberId, member_id: memberId, ...prefs }, { onConflict: 'user_id' })
     .select()
     .single();
   if (error) throw new Error(error.message ?? 'Unknown error');

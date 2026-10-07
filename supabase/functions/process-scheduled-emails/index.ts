@@ -4,8 +4,13 @@ const supabase = createClient(
   Deno.env.get('SUPABASE_URL') ?? '',
   Deno.env.get('SUPABASE_SERVICE_ROLE_KEY') ?? '',
 );
+const cronSecret = Deno.env.get('EMAIL_CRON_SECRET') ?? '';
 
-Deno.serve(async () => {
+Deno.serve(async (req) => {
+  if (!cronSecret || req.headers.get('x-cron-secret') !== cronSecret) {
+    return json({ error: 'Not authorised' }, 401);
+  }
+
   const { data: emails, error } = await supabase
     .from('scheduled_emails')
     .select('*')

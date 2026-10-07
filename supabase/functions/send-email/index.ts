@@ -19,6 +19,12 @@ const emailRelaySecret = Deno.env.get('EMAIL_RELAY_SECRET') ?? '';
 
 const supabase = createClient(supabaseUrl, serviceRoleKey);
 
+class HttpError extends Error {
+  constructor(message: string, public status = 500) {
+    super(message);
+  }
+}
+
 Deno.serve(async (req) => {
   if (req.method === 'OPTIONS') return new Response('ok', { headers: corsHeaders });
   try {
@@ -28,6 +34,7 @@ Deno.serve(async (req) => {
       return json({ ok: true });
     }
     if (body.action === 'schedule') {
+      await requireAuthorizedCaller(req, 'notifications.send');
       const { data, error } = await supabase
         .from('scheduled_emails')
         .insert({
@@ -42,6 +49,7 @@ Deno.serve(async (req) => {
       return json({ id: data.id });
     }
     if (body.action === 'resend') {
+      await requireAuthorizedCaller(req, 'notifications.send');
       const { data: log, error } = await supabase.from('email_log').select('*').eq('id', body.messageId).single();
       if (error) throw error;
       const sent = await sendProviderEmail(log.recipient_email, log.subject, log.html_content ?? `<p>${escapeHtml(log.subject)}</p>`, log.text_content ?? undefined);
@@ -55,6 +63,7 @@ Deno.serve(async (req) => {
       return json({ id: sent.id });
     }
     if (body.action === 'batch') {
+      await requireAuthorizedCaller(req, 'notifications.send');
       const results = [];
       for (const recipient of body.recipients) {
         results.push(await sendAndLog({
@@ -68,6 +77,7 @@ Deno.serve(async (req) => {
       }
       return json({ count: results.length, results });
     }
+    await requireAuthorizedCaller(req, 'notifications.send');
     const result = await sendAndLog({
       to: body.to,
       subject: body.subject,
@@ -78,9 +88,46 @@ Deno.serve(async (req) => {
     });
     return json(result);
   } catch (error) {
-    return json({ error: error instanceof Error ? error.message : 'Unknown email error' }, 500);
+    const status = error instanceof HttpError ? error.status : 500;
+    return json({ error: error instanceof Error ? error.message : 'Unknown email error' }, status);
   }
 });
+
+async function requireAuthorizedCaller(req: Request, permission: string): Promise<string> {
+  const authHeader = req.headers.get('Authorization') ?? '';
+  const jwt = authHeader.startsWith('Bearer ') ? authHeader.slice(7) : '';
+  if (!jwt) throw new HttpError('Authentication required', 401);
+
+  const { data: userData, error: userError } = await supabase.auth.getUser(jwt);
+  const user = userData?.user;
+  if (userError || !user) throw new HttpError('Invalid authentication token', 401);
+
+  const { data: profile, error: profileError } = await supabase
+    .from('profiles')
+    .select('role')
+    .eq('id', user.id)
+    .single();
+  if (profileError || !profile) throw new HttpError('Profile not found', 403);
+  if (['admin', 'coordinator'].includes(profile.role)) return user.id;
+
+  const { data: assignments, error: assignmentError } = await supabase
+    .from('admin_role_assignments')
+    .select('role_id')
+    .eq('user_id', user.id);
+  if (assignmentError) throw new HttpError('Could not verify permissions', 403);
+  const roleIds = (assignments ?? []).map((row: { role_id: string }) => row.role_id);
+  if (roleIds.length > 0) {
+    const { data: permissions, error: permissionError } = await supabase
+      .from('admin_role_permissions')
+      .select('role_id')
+      .in('role_id', roleIds)
+      .eq('permission_key', permission);
+    if (permissionError) throw new HttpError('Could not verify permissions', 403);
+    if ((permissions ?? []).length > 0) return user.id;
+  }
+
+  throw new HttpError('Not authorised to send email', 403);
+}
 
 async function sendAndLog(input: {
   to: string;

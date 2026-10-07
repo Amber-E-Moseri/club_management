@@ -16,7 +16,7 @@ beforeEach(() => {
 const SECRET = 'test-relay-secret-abc123';
 
 const validConfig = {
-  gmailUser: 'blwyorkuni@gmail.com',
+  gmailUser: 'club-sender@example.com',
   gmailAppPassword: 'abcd efgh ijkl mnop',
   relaySecret: SECRET,
 };
@@ -130,7 +130,7 @@ describe('sendViaGmail', () => {
         port: 587,
         secure: false,
         auth: {
-          user: 'blwyorkuni@gmail.com',
+          user: 'club-sender@example.com',
           pass: 'abcd efgh ijkl mnop',
         },
       }),
@@ -163,7 +163,7 @@ describe('sendViaGmail', () => {
 
     expect(mockSendMail).toHaveBeenCalledWith(
       expect.objectContaining({
-        from: expect.stringContaining('blwyorkuni@gmail.com'),
+        from: expect.stringContaining('club-sender@example.com'),
       }),
     );
     expect(mockSendMail).not.toHaveBeenCalledWith(

@@ -4,6 +4,7 @@ const supabase = createClient(
   Deno.env.get('SUPABASE_URL') ?? '',
   Deno.env.get('SUPABASE_SERVICE_ROLE_KEY') ?? '',
 );
+const unsubscribeSecret = Deno.env.get('UNSUBSCRIBE_SECRET') ?? '';
 
 const preferenceByType: Record<string, string> = {
   meeting_reminder_8am: 'meeting_reminders_8am',
@@ -20,15 +21,15 @@ Deno.serve(async (req) => {
   try {
     const url = new URL(req.url);
     const token = url.searchParams.get('token') ?? '';
-    const type = url.searchParams.get('type') ?? '';
-    const payload = JSON.parse(atob(token)) as { memberId?: string; notifType?: string };
+    const payload = await verifyToken(token) as { memberId?: string; notifType?: string; exp?: number };
     const memberId = payload.memberId;
-    const preference = preferenceByType[type || payload.notifType || ''];
+    const preference = preferenceByType[payload.notifType || ''];
     if (!memberId || !preference) throw new Error('Invalid unsubscribe token');
 
-    await supabase
+    const { error: upsertError } = await supabase
       .from('email_preferences')
-      .upsert({ member_id: memberId, [preference]: false }, { onConflict: 'member_id' });
+      .upsert({ user_id: memberId, member_id: memberId, [preference]: false }, { onConflict: 'user_id' });
+    if (upsertError) throw new Error('Could not update email preferences');
 
     return new Response(successHtml(preference), {
       headers: { 'Content-Type': 'text/html; charset=utf-8' },
@@ -40,6 +41,46 @@ Deno.serve(async (req) => {
     });
   }
 });
+
+async function verifyToken(token: string): Promise<unknown> {
+  if (!unsubscribeSecret) throw new Error('Unsubscribe signing is not configured');
+  const [encodedPayload, signature] = token.split('.');
+  if (!encodedPayload || !signature) throw new Error('Invalid unsubscribe token');
+
+  const expected = await hmacHex(encodedPayload, unsubscribeSecret);
+  if (!timingSafeEqual(signature, expected)) throw new Error('Invalid unsubscribe token');
+
+  const payload = JSON.parse(new TextDecoder().decode(base64UrlDecode(encodedPayload))) as { exp?: number };
+  if (!payload.exp || payload.exp < Math.floor(Date.now() / 1000)) {
+    throw new Error('Unsubscribe token expired');
+  }
+  return payload;
+}
+
+async function hmacHex(value: string, secret: string): Promise<string> {
+  const key = await crypto.subtle.importKey(
+    'raw',
+    new TextEncoder().encode(secret),
+    { name: 'HMAC', hash: 'SHA-256' },
+    false,
+    ['sign'],
+  );
+  const signature = await crypto.subtle.sign('HMAC', key, new TextEncoder().encode(value));
+  return Array.from(new Uint8Array(signature)).map((b) => b.toString(16).padStart(2, '0')).join('');
+}
+
+function base64UrlDecode(value: string): Uint8Array {
+  const padded = value.replace(/-/g, '+').replace(/_/g, '/') + '='.repeat((4 - value.length % 4) % 4);
+  const raw = atob(padded);
+  return Uint8Array.from(raw, (c) => c.charCodeAt(0));
+}
+
+function timingSafeEqual(a: string, b: string): boolean {
+  if (a.length !== b.length) return false;
+  let result = 0;
+  for (let i = 0; i < a.length; i++) result |= a.charCodeAt(i) ^ b.charCodeAt(i);
+  return result === 0;
+}
 
 function successHtml(preference: string) {
   return `<!doctype html><html><body style="font-family:Arial,sans-serif;padding:32px;"><h1>Unsubscribed</h1><p>${preference.replace(/_/g, ' ')} emails have been disabled.</p><p><a href="/email-preferences">Manage email preferences</a></p></body></html>`;
