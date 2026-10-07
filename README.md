@@ -122,10 +122,11 @@ docs/                   # Architecture docs, prototype audit, data model
 | `weekly_messages` | Weekly message library |
 | `books` | Book of the month |
 | `meetings` / `meeting_items` | Meeting records and agenda items |
-| `push_subscriptions` | Web push device tokens |
-| `email_notification_prefs` | Per-user email opt-in settings |
+| `push_subscriptions` | Web push device endpoints, one row per device, owned by `user_id` |
+| `email_preferences` | Per-account email opt-in settings, one row per `user_id` |
+| `push_notification_log` | Delivery history per recipient `user_id` (written by the backend only) |
 
-Apply migrations 001–013 in order from `supabase/migrations/`.
+Apply every migration in order with `npx supabase db push` (or `npx supabase db reset --local` for a local database). `supabase/migrations/` is the only place the schema changes; see [docs/database-and-identity.md](docs/database-and-identity.md) for the identity model, privilege rules and migration rules.
 
 Migration 013 adds the `account_approved` email template type to `email_log`. Migration 012 adds `follow_up_date` to `contacts`. Migration 011 adds `contact_tags`, `contact_follow_ups`, and `contact_audit_log`.
 
@@ -137,12 +138,7 @@ npm run e2e       # End-to-end (Playwright)
 npm run e2e:ui    # Playwright UI mode
 ```
 
-Seed a coordinator test account:
-
-```bash
-npm run seed:proto
-npm run seed:proto:reset   # reset and re-seed
-```
+Release certification (local Supabase only, fake data) is described in [supabase/verification/README.md](supabase/verification/README.md).
 
 ## Color Reference — York Red Theme
 
@@ -155,12 +151,10 @@ npm run seed:proto:reset   # reset and re-seed
 
 ## Deployment
 
-1. Apply Supabase migrations 001–013 in order from `supabase/migrations/`.
-2. Configure Vercel: build command `npm run build`, output directory `build`.
-3. Add all environment variables in Vercel project settings.
-4. Confirm the SPA rewrite in `vercel.json` routes all paths to `index.html`.
-5. Add the production domain to Supabase auth redirect URLs.
-6. Set `GMAIL_USER` / `GMAIL_APP_PASSWORD` in Vercel env vars for the email relay function.
+Follow [docs/clean-production-deployment.md](docs/clean-production-deployment.md): a brand-new Supabase project built from the
+migrations, Auth configuration, Storage, Edge Function deployment and secrets (by name), the one-time first-administrator
+bootstrap, the cutover and the rollback to the archived project. In short: Vercel build command `npm run build`, output
+directory `build`, SPA rewrite in `vercel.json`, production domain in the Supabase Auth redirect URLs.
 
 ## Feature Notes
 
