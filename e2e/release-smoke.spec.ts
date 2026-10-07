@@ -12,6 +12,7 @@ if (!/^https?:\/\/(127\.0\.0\.1|localhost)[:/]/.test(url)) throw new Error('rele
 const admin = createClient(url, serviceKey, { auth: { persistSession: false, autoRefreshToken: false } });
 const run = `${Date.now()}`;
 const password = `${randomBytes(18).toString('base64url')}aA1!`; // random per run; never reused
+const authUrl = `${url.replace(/\/$/, '')}/auth/v1`;
 const accounts = {
   admin: { email: `e2e.admin.${run}@example.test`, name: `E2E Admin ${run}`, role: 'admin', status: 'active' },
   member: { email: `e2e.member.${run}@example.test`, name: `E2E Member ${run}`, role: 'member', status: 'active' },
@@ -20,7 +21,30 @@ const accounts = {
 const ids: string[] = [];
 let pendingId = '';
 
-test.beforeAll(async () => {
+async function waitForAuthReadiness() {
+  const deadline = Date.now() + 60_000;
+  let lastError = '';
+  while (Date.now() < deadline) {
+    try {
+      const health = await fetch(`${authUrl}/health`);
+      if (!health.ok) throw new Error(`health ${health.status}`);
+
+      const adminUsers = await fetch(`${authUrl}/admin/users?page=1&per_page=1`, {
+        headers: { apikey: serviceKey, Authorization: `Bearer ${serviceKey}` },
+      });
+      if (adminUsers.ok) return;
+      lastError = `admin users ${adminUsers.status}: ${await adminUsers.text()}`;
+    } catch (e) {
+      lastError = e instanceof Error ? e.message : String(e);
+    }
+    await new Promise((resolve) => setTimeout(resolve, 500));
+  }
+  throw new Error(`local Supabase Auth was not ready within 60s (${lastError})`);
+}
+
+test.beforeAll(async ({}, testInfo) => {
+  testInfo.setTimeout(90_000);
+  await waitForAuthReadiness();
   for (const [key, a] of Object.entries(accounts)) {
     const { data, error } = await admin.auth.admin.createUser({
       email: a.email,
@@ -48,11 +72,19 @@ function trackErrors(page: Page) {
   return errors;
 }
 
-async function signIn(page: Page, email: string, pw = password) {
+async function signIn(page: Page, email: string, pw = password, expected: 'success' | 'failure' = 'success') {
   await page.goto('/');
   await page.getByLabel('Email').fill(email);
   await page.getByLabel('Password').fill(pw);
-  await page.getByRole('button', { name: 'Sign In' }).click();
+  const [authResponse] = await Promise.all([
+    page.waitForResponse((response) => (
+      response.url().startsWith(`${authUrl}/token?grant_type=password`)
+        && response.request().method() === 'POST'
+    ), { timeout: 20_000 }),
+    page.getByRole('button', { name: 'Sign In' }).click(),
+  ]);
+  if (expected === 'success') expect(authResponse.status(), 'Supabase password auth should succeed').toBe(200);
+  else expect(authResponse.status(), 'Supabase password auth should reject invalid credentials').toBeGreaterThanOrEqual(400);
 }
 
 async function expectNoHorizontalOverflow(page: Page) {
@@ -62,7 +94,7 @@ async function expectNoHorizontalOverflow(page: Page) {
 
 test('invalid login is rejected', async ({ page }) => {
   const errors = trackErrors(page);
-  await signIn(page, accounts.member.email, 'wrong-password');
+  await signIn(page, accounts.member.email, 'wrong-password', 'failure');
   await expect(page.getByRole('heading', { name: 'Sign In' })).toBeVisible();
   await expect(page.getByRole('alert')).toBeVisible();
   expect(errors).toEqual([]);
