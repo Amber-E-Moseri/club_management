@@ -39,14 +39,14 @@ REACT_APP_PUBLIC_APP_URL=https://your-app.vercel.app
 REACT_APP_VAPID_PUBLIC_KEY=...
 
 # Vercel environment variables (set in Vercel dashboard, not .env):
-GMAIL_USER=blwyorkuni@gmail.com
+GMAIL_USER=club-sender@example.com
 GMAIL_APP_PASSWORD=xxxx xxxx xxxx xxxx   # Google App Password
 EMAIL_RELAY_SECRET=<random 32-char token>
 
 # Supabase project secrets (Dashboard > Edge Functions > Secrets):
 # EMAIL_RELAY_URL=https://<your-vercel-app>.vercel.app/api/email-relay
 # EMAIL_RELAY_SECRET=<same token as above>
-# EMAIL_FROM=BLW York Hub <blwyorkuni@gmail.com>
+# EMAIL_FROM=BLW York Hub <club-sender@example.com>
 # VAPID_PRIVATE_KEY=...
 ```
 
