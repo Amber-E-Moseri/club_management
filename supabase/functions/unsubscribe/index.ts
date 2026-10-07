@@ -21,14 +21,15 @@ Deno.serve(async (req) => {
   try {
     const url = new URL(req.url);
     const token = url.searchParams.get('token') ?? '';
-    const payload = await verifyToken(token) as { memberId?: string; notifType?: string; exp?: number };
-    const memberId = payload.memberId;
+    // The token subject is the authenticated account: user_id (= profiles.id = auth.users.id).
+    const payload = await verifyToken(token) as { userId?: string; notifType?: string; exp?: number };
+    const userId = payload.userId;
     const preference = preferenceByType[payload.notifType || ''];
-    if (!memberId || !preference) throw new Error('Invalid unsubscribe token');
+    if (!userId || !preference) throw new Error('Invalid unsubscribe token');
 
     const { error: upsertError } = await supabase
       .from('email_preferences')
-      .upsert({ user_id: memberId, member_id: memberId, [preference]: false }, { onConflict: 'user_id' });
+      .upsert({ user_id: userId, [preference]: false }, { onConflict: 'user_id' });
     if (upsertError) throw new Error('Could not update email preferences');
 
     return new Response(successHtml(preference), {
