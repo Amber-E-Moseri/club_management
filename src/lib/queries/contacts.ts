@@ -90,16 +90,30 @@ export async function bulkDeleteContacts(ids: string[]): Promise<void> {
 
 export async function fetchTags(): Promise<ContactTag[]> {
   const { data, error } = await supabase
-    .from('tags_settings').select('*').order('sort_order', { ascending: true });
+    .from('tags_settings')
+    .select('*')
+    .order('sort_order', { ascending: true });
   if (error) throw new Error(error.message ?? 'Unknown error');
-  return data ?? [];
+  return (data ?? []).map((r: Record<string, unknown>) => ({
+    id: r.id as string,
+    tag_name: r.tag_name as string,
+    color: r.color as string,
+    sort_order: (r.sort_order ?? r.order ?? 0) as number,
+  }));
 }
 
 export async function fetchStatuses(): Promise<ContactStatus[]> {
   const { data, error } = await supabase
-    .from('status_settings').select('*').order('sort_order', { ascending: true });
+    .from('status_settings')
+    .select('*')
+    .order('sort_order', { ascending: true });
   if (error) throw new Error(error.message ?? 'Unknown error');
-  return data ?? [];
+  return (data ?? []).map((r: Record<string, unknown>) => ({
+    id: r.id as string,
+    status_name: r.status_name as string,
+    color: r.color as string,
+    sort_order: (r.sort_order ?? r.order ?? 0) as number,
+  }));
 }
 
 // ─── Cells ────────────────────────────────────────────────────────────────────

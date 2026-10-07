@@ -86,23 +86,25 @@ export function useUserProfile(userId: string | undefined): UseUserProfileReturn
         if (err) data = null;
         if (!data) {
           // Profile row not yet created — fetch base profile only
+          // Note: profiles table only has: id, email, name, role, cell_id, admin_role, avatar_url, joined_at
           supabase
             .from('profiles')
-            .select('email, joined_at, cell_id, bsc_assignment, spiritual_role')
+            .select('email, name, joined_at, cell_id')
             .eq('id', userId)
             .single()
-            .then(({ data: base }) => {
+            .then(({ data: base, error: baseErr }) => {
               if (base) {
+                const parts = (base.name ?? '').split(' ');
                 setProfile({
                   userId,
-                  firstName: '',
-                  lastName: '',
+                  firstName: parts[0] ?? '',
+                  lastName: parts.slice(1).join(' '),
                   email: base.email ?? '',
                   joinedAt: base.joined_at ?? '',
-                  cellId: base.cell_id,
-                  bscAssignment: base.bsc_assignment,
-                  spiritualRole: base.spiritual_role,
+                  cellId: base.cell_id ?? undefined,
                 });
+              } else if (baseErr) {
+                setError(baseErr.message);
               }
               setLoading(false);
             });
