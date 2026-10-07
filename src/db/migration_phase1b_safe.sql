@@ -188,3 +188,71 @@ CREATE POLICY "user_profiles_admin_read" ON public.user_profiles FOR SELECT
   USING (
     EXISTS (SELECT 1 FROM public.profiles WHERE id = auth.uid() AND role IN ('admin','coordinator'))
   );
+
+-- ── 8. confessions ────────────────────────────────────────────
+CREATE TABLE IF NOT EXISTS public.confessions (
+  id             UUID        PRIMARY KEY DEFAULT gen_random_uuid(),
+  title          TEXT        NOT NULL,
+  body           TEXT        NOT NULL,
+  scheduled_date DATE        NOT NULL,
+  created_by     UUID        NOT NULL REFERENCES public.profiles(id) ON DELETE CASCADE,
+  is_active      BOOLEAN     NOT NULL DEFAULT TRUE,
+  created_at     TIMESTAMPTZ NOT NULL DEFAULT now()
+);
+ALTER TABLE public.confessions ENABLE ROW LEVEL SECURITY;
+
+DROP POLICY IF EXISTS "confessions_read" ON public.confessions;
+CREATE POLICY "confessions_read" ON public.confessions FOR SELECT
+  USING (auth.role() = 'authenticated' AND is_active = TRUE);
+
+DROP POLICY IF EXISTS "confessions_manage" ON public.confessions;
+CREATE POLICY "confessions_manage" ON public.confessions FOR ALL
+  USING (
+    EXISTS (SELECT 1 FROM public.profiles WHERE id = auth.uid() AND role IN ('admin','coordinator'))
+  );
+
+-- ── 9. confession_declarations ────────────────────────────────
+CREATE TABLE IF NOT EXISTS public.confession_declarations (
+  confession_id UUID NOT NULL REFERENCES public.confessions(id) ON DELETE CASCADE,
+  user_id       UUID NOT NULL REFERENCES public.profiles(id) ON DELETE CASCADE,
+  created_at    TIMESTAMPTZ NOT NULL DEFAULT now(),
+  PRIMARY KEY (confession_id, user_id)
+);
+ALTER TABLE public.confession_declarations ENABLE ROW LEVEL SECURITY;
+
+DROP POLICY IF EXISTS "declarations_own" ON public.confession_declarations;
+CREATE POLICY "declarations_own" ON public.confession_declarations FOR ALL
+  USING (auth.uid() = user_id);
+
+DROP POLICY IF EXISTS "declarations_read_all" ON public.confession_declarations;
+CREATE POLICY "declarations_read_all" ON public.confession_declarations FOR SELECT
+  USING (auth.role() = 'authenticated');
+
+-- ── 10. Fix tags_settings / status_settings ────────────────────
+-- Make coordinator_id nullable (in case it was created as NOT NULL)
+ALTER TABLE public.tags_settings  ALTER COLUMN coordinator_id DROP NOT NULL;
+ALTER TABLE public.status_settings ALTER COLUMN coordinator_id DROP NOT NULL;
+
+-- Add sort_order column if it doesn't exist (in case "order" was used instead)
+ALTER TABLE public.tags_settings
+  ADD COLUMN IF NOT EXISTS sort_order int NOT NULL DEFAULT 0;
+ALTER TABLE public.status_settings
+  ADD COLUMN IF NOT EXISTS sort_order int NOT NULL DEFAULT 0;
+
+-- Seed default tags
+INSERT INTO public.tags_settings (tag_name, color, sort_order) VALUES
+  ('Interested',      '#2196F3', 1),
+  ('First Timer',     '#E31837', 2),
+  ('Regular Visitor', '#4CAF50', 3),
+  ('New Convert',     '#FF9800', 4),
+  ('Church Member',   '#9C27B0', 5)
+ON CONFLICT DO NOTHING;
+
+-- Seed default statuses
+INSERT INTO public.status_settings (status_name, color, sort_order) VALUES
+  ('Will Follow Up',  '#FF9800', 1),
+  ('Contacted',       '#4CAF50', 2),
+  ('Not Interested',  '#E31837', 3),
+  ('Following Up',    '#2196F3', 4),
+  ('Joined Cell',     '#9C27B0', 5)
+ON CONFLICT DO NOTHING;

@@ -8,7 +8,7 @@ alter table public.profiles
   add column if not exists status text not null default 'active'
   check (status in ('pending', 'active', 'rejected'));
 
--- 2. Add student_number column
+-- 2. Add staudent_number column
 alter table public.profiles
   add column if not exists student_number text;
 

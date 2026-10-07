@@ -16,36 +16,25 @@ export interface ApprovalResult {
  */
 export async function approvePendingMember(
   memberId: string,
-  actingUserId: string,
+  _actingUserId?: string,
 ): Promise<ApprovalResult> {
-  // Verify acting user has approval authority
-  const { data: actor } = await supabase
-    .from('profiles')
-    .select('role')
-    .eq('id', actingUserId)
-    .single();
-
-  if (!actor || !['admin', 'coordinator', 'cell_leader'].includes(actor.role)) {
-    throw new Error('Not authorised to approve members.');
-  }
-
   // Fetch target; guard against already-active (idempotency)
   const { data: target, error: fetchErr } = await supabase
-    .from('profiles')
+    .from('member_directory')
     .select('id, email, full_name, status')
     .eq('id', memberId)
-    .single();
+    .maybeSingle();
 
   if (fetchErr || !target) return { approval: 'not_found', email: 'skipped' };
   if (target.status !== 'pending') return { approval: 'not_pending', email: 'skipped' };
 
-  // Activate profile
-  const { error: updateErr } = await supabase
-    .from('profiles')
-    .update({ status: 'active' })
-    .eq('id', memberId);
+  // Activate profile through DB-authorized RPC. This is the authority.
+  const { data: approvedRows, error: updateErr } = await supabase
+    .rpc('approve_pending_member', { target_member_id: memberId });
 
   if (updateErr) throw new Error(updateErr.message ?? 'Profile activation failed.');
+  const approved = Array.isArray(approvedRows) ? approvedRows[0] : approvedRows;
+  if (!approved) return { approval: 'not_pending', email: 'skipped' };
 
   // Request notification — failure here must not undo the activation
   const loginUrl = `${getAppOrigin()}/`;
@@ -75,7 +64,7 @@ export interface MemberFilters {
 
 export async function fetchMembersFiltered(filters: MemberFilters = {}): Promise<Member[]> {
   let q = supabase
-    .from('profiles')
+    .from('member_directory')
     .select('id, full_name, email, avatar_url, role, joined_at, cell_id')
     .order('full_name', { ascending: true });
 

@@ -6,7 +6,7 @@
 -- Message of the Week
 -- ────────────────────────────────────────────────────────────────
 
-CREATE TABLE public.weekly_messages (
+CREATE TABLE IF NOT EXISTS public.weekly_messages (
   id               UUID          DEFAULT gen_random_uuid() PRIMARY KEY,
   created_by       UUID          NOT NULL REFERENCES public.profiles(id) ON DELETE CASCADE,
   author_name      VARCHAR(255)  NOT NULL,
@@ -25,9 +25,9 @@ CREATE TABLE public.weekly_messages (
   updated_at       TIMESTAMPTZ   DEFAULT now()
 );
 
-CREATE INDEX idx_weekly_messages_week ON public.weekly_messages (week_start, week_end);
-CREATE INDEX idx_weekly_messages_scope ON public.weekly_messages (scope);
-CREATE INDEX idx_weekly_messages_creator ON public.weekly_messages (created_by);
+CREATE INDEX IF NOT EXISTS idx_weekly_messages_week ON public.weekly_messages (week_start, week_end);
+CREATE INDEX IF NOT EXISTS idx_weekly_messages_scope ON public.weekly_messages (scope);
+CREATE INDEX IF NOT EXISTS idx_weekly_messages_creator ON public.weekly_messages (created_by);
 
 ALTER TABLE public.weekly_messages ENABLE ROW LEVEL SECURITY;
 
@@ -74,6 +74,7 @@ CREATE POLICY "delete own or admin"
   );
 
 -- Auto-update updated_at
+DROP TRIGGER IF EXISTS set_weekly_messages_updated_at ON public.weekly_messages;
 CREATE TRIGGER set_weekly_messages_updated_at
   BEFORE UPDATE ON public.weekly_messages
   FOR EACH ROW EXECUTE FUNCTION set_updated_at();
@@ -82,7 +83,7 @@ CREATE TRIGGER set_weekly_messages_updated_at
 -- Habit Tracker
 -- ────────────────────────────────────────────────────────────────
 
-CREATE TABLE public.habit_templates (
+CREATE TABLE IF NOT EXISTS public.habit_templates (
   id          UUID         DEFAULT gen_random_uuid() PRIMARY KEY,
   name        VARCHAR(100) NOT NULL,
   description TEXT,
@@ -94,7 +95,7 @@ CREATE TABLE public.habit_templates (
   created_at  TIMESTAMPTZ  DEFAULT now()
 );
 
-CREATE INDEX idx_habit_templates_active ON public.habit_templates (is_active, "order");
+CREATE INDEX IF NOT EXISTS idx_habit_templates_active ON public.habit_templates (is_active, "order");
 
 ALTER TABLE public.habit_templates ENABLE ROW LEVEL SECURITY;
 
@@ -113,7 +114,7 @@ CREATE POLICY "coordinators manage habit templates"
     )
   );
 
-CREATE TABLE public.habit_entries (
+CREATE TABLE IF NOT EXISTS public.habit_entries (
   id           UUID         DEFAULT gen_random_uuid() PRIMARY KEY,
   template_id  UUID         NOT NULL REFERENCES public.habit_templates(id) ON DELETE CASCADE,
   user_id      UUID         NOT NULL REFERENCES public.profiles(id) ON DELETE CASCADE,
@@ -123,8 +124,8 @@ CREATE TABLE public.habit_entries (
   UNIQUE (template_id, user_id, entry_date)
 );
 
-CREATE INDEX idx_habit_entries_user_date ON public.habit_entries (user_id, entry_date);
-CREATE INDEX idx_habit_entries_template ON public.habit_entries (template_id, entry_date);
+CREATE INDEX IF NOT EXISTS idx_habit_entries_user_date ON public.habit_entries (user_id, entry_date);
+CREATE INDEX IF NOT EXISTS idx_habit_entries_template ON public.habit_entries (template_id, entry_date);
 
 ALTER TABLE public.habit_entries ENABLE ROW LEVEL SECURITY;
 
