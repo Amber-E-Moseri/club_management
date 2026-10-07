@@ -104,10 +104,12 @@ async function requireAuthorizedCaller(req: Request, permission: string): Promis
 
   const { data: profile, error: profileError } = await supabase
     .from('profiles')
-    .select('role')
+    .select('role, status')
     .eq('id', user.id)
     .single();
   if (profileError || !profile) throw new HttpError('Profile not found', 403);
+  // Only an approved (active) account may act; a pending or rejected account never holds administrative power.
+  if (profile.status !== 'active') throw new HttpError('Not authorised to send email', 403);
   if (['admin', 'coordinator'].includes(profile.role)) return user.id;
 
   const { data: assignments, error: assignmentError } = await supabase
