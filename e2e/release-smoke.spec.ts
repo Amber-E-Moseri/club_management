@@ -1,3 +1,4 @@
+import { randomBytes } from 'node:crypto';
 import { createClient } from '@supabase/supabase-js';
 import { expect, test, type Page } from '@playwright/test';
 
@@ -10,7 +11,7 @@ if (!/^https?:\/\/(127\.0\.0\.1|localhost)[:/]/.test(url)) throw new Error('rele
 
 const admin = createClient(url, serviceKey, { auth: { persistSession: false, autoRefreshToken: false } });
 const run = `${Date.now()}`;
-const password = 'E2ePassword123!';
+const password = `${randomBytes(18).toString('base64url')}aA1!`; // random per run; never reused
 const accounts = {
   admin: { email: `e2e.admin.${run}@example.test`, name: `E2E Admin ${run}`, role: 'admin', status: 'active' },
   member: { email: `e2e.member.${run}@example.test`, name: `E2E Member ${run}`, role: 'member', status: 'active' },
