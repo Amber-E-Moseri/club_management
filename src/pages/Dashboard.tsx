@@ -24,7 +24,7 @@ interface DashboardProps {
 
 export const Dashboard: React.FC<DashboardProps> = ({ user }) => {
   const navigate = useNavigate();
-  const { stats, activity: _activity, meetings, attentionContacts, loading, error } = useDashboardStats(user);
+  const { stats, meetings, attentionContacts, loading, error } = useDashboardStats(user);
   const { message } = useCurrentWeekMessage();
   const { habitsWithStats } = useHabits(user?.id);
   const devotional = useDevotional();

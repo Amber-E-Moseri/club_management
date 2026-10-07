@@ -1,4 +1,5 @@
 import React from 'react';
+import { Clock, XCircle } from 'lucide-react';
 import { Button } from '../components/foundation/Button';
 import type { AuthUser } from '../lib/auth';
 
@@ -24,7 +25,11 @@ export const PendingApproval: React.FC<Props> = ({ user, onSignOut }) => {
         </div>
 
         <div className="bg-white rounded-lg shadow-md p-8 text-center space-y-5">
-          <div className="text-5xl">{rejected ? '❌' : '⏳'}</div>
+          <div className="flex items-center justify-center">
+            {rejected
+              ? <XCircle className="w-14 h-14 text-red-400" aria-hidden="true" />
+              : <Clock className="w-14 h-14 text-york-400" aria-hidden="true" />}
+          </div>
 
           <div>
             <h2 className="text-xl font-bold text-gray-900 mb-1">

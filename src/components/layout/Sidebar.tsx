@@ -1,8 +1,9 @@
 import React from 'react';
 import { useNavigate, useLocation } from 'react-router-dom';
 import {
-  Calendar, CalendarDays, ClipboardList, LayoutDashboard, Megaphone,
-  Settings, Sparkles, Users, type LucideIcon,
+  BarChart3, BookOpen, Calendar, CalendarDays, ChevronLeft, ChevronRight,
+  ClipboardCheck, ClipboardList, FileText, KeyRound, LayoutDashboard, LogOut,
+  Mail, MessageSquareText, Moon, Settings, Sparkles, Sun, Users, type LucideIcon,
 } from 'lucide-react';
 import { cn } from '../../lib/utils';
 import type { AuthUser } from '../../lib/auth';
@@ -31,9 +32,15 @@ const NAV_GROUPS: NavGroup[] = [
   {
     groupKey: 'Overview',
     items: [
-      { labelKey: 'dashboard', label: 'Dashboard', path: '/',        icon: LayoutDashboard, minRole: 0 },
-      { labelKey: 'people',    label: 'People',    path: '/members', icon: Users,           minRole: 1 },
-      { labelKey: 'outreach',  label: 'Outreach',  path: '/contacts',icon: ClipboardList,   minRole: 1 },
+      { labelKey: 'dashboard', label: 'Overview', path: '/', icon: LayoutDashboard, minRole: 0 },
+    ],
+  },
+  {
+    groupKey: 'People',
+    items: [
+      { labelKey: 'people', label: 'Members', path: '/members', icon: Users, minRole: 1 },
+      { labelKey: 'outreach', label: 'Contacts', path: '/contacts', icon: ClipboardList, minRole: 1 },
+      { labelKey: 'approvals', label: 'Approvals', path: '/admin/pending', icon: ClipboardCheck, minRole: 2 },
     ],
   },
   {
@@ -45,15 +52,21 @@ const NAV_GROUPS: NavGroup[] = [
     ],
   },
   {
-    groupKey: 'Manage',
+    groupKey: 'Resources',
     items: [
-      { labelKey: 'admin', label: 'Admin', path: '/admin', icon: Settings, minRole: 2 },
+      { labelKey: 'devotionals', label: 'Devotionals', path: '/devotionals', icon: BookOpen, minRole: 0 },
+      { labelKey: 'messages', label: 'Weekly Messages', path: '/messages', icon: MessageSquareText, minRole: 0 },
+      { labelKey: 'books', label: 'Books', path: '/books', icon: FileText, minRole: 0 },
+      { labelKey: 'testimonies', label: 'Testimonies', path: '/testimonies', icon: Sparkles, minRole: 0 },
     ],
   },
   {
-    groupKey: 'More',
+    groupKey: 'Administration',
     items: [
-      { labelKey: 'announcements', label: 'Announcements', path: '/announcements', icon: Megaphone, minRole: 0 },
+      { labelKey: 'admin', label: 'Admin', path: '/admin', icon: Settings, minRole: 2 },
+      { labelKey: 'reports', label: 'Reports', path: '/admin/contact-reports', icon: BarChart3, minRole: 2 },
+      { labelKey: 'roles', label: 'Roles & Access', path: '/admin/roles', icon: KeyRound, minRole: 2 },
+      { labelKey: 'communications', label: 'Communications', path: '/admin/email-log', icon: Mail, minRole: 2 },
     ],
   },
 ];
@@ -98,7 +111,9 @@ export const Sidebar: React.FC<SidebarProps> = ({
           <div className="flex flex-col items-center gap-2">
             <img src="/logo.png" alt="BLW York" className="w-8 h-8 object-contain" />
             {onToggleCollapse && (
-              <button onClick={onToggleCollapse} title="Expand" className="w-6 h-6 flex items-center justify-center text-gray-400 hover:text-gray-700">›</button>
+              <button onClick={onToggleCollapse} aria-label="Expand sidebar" title="Expand" className="w-6 h-6 flex items-center justify-center text-gray-400 hover:text-gray-700 dark:hover:text-slate-200">
+                <ChevronRight className="w-4 h-4" aria-hidden="true" />
+              </button>
             )}
           </div>
         ) : (
@@ -111,7 +126,9 @@ export const Sidebar: React.FC<SidebarProps> = ({
               </div>
             </div>
             {onToggleCollapse && (
-              <button onClick={onToggleCollapse} title="Collapse" className="w-6 h-6 flex items-center justify-center text-gray-400 hover:text-gray-700">‹</button>
+              <button onClick={onToggleCollapse} aria-label="Collapse sidebar" title="Collapse" className="w-6 h-6 flex items-center justify-center text-gray-400 hover:text-gray-700 dark:hover:text-slate-200">
+                <ChevronLeft className="w-4 h-4" aria-hidden="true" />
+              </button>
             )}
           </div>
         )}
@@ -128,9 +145,10 @@ export const Sidebar: React.FC<SidebarProps> = ({
             'hover:bg-gray-100 hover:text-gray-900 dark:text-slate-300 dark:hover:bg-slate-800',
             collapsed ? 'justify-center' : 'gap-3 px-4',
           )}
+          aria-label="Toggle dark mode"
           title="Toggle dark mode"
         >
-          <span>{theme === 'dark' ? '☀' : '☾'}</span>
+          {theme === 'dark' ? <Sun className="w-4 h-4" aria-hidden="true" /> : <Moon className="w-4 h-4" aria-hidden="true" />}
           {!collapsed && <span>{theme === 'dark' ? 'Light mode' : 'Dark mode'}</span>}
         </button>
       </div>
@@ -180,7 +198,9 @@ export const Sidebar: React.FC<SidebarProps> = ({
               <div className="w-8 h-8 rounded-full bg-york-600 text-white flex items-center justify-center text-xs font-bold">
                 {getInitials(user.name)}
               </div>
-              <button onClick={onSignOut} title="Sign out" className="text-xs text-gray-400 hover:text-york-600 transition-colors">↪</button>
+              <button onClick={onSignOut} aria-label="Sign out" title="Sign out" className="text-gray-400 hover:text-york-600 transition-colors">
+                <LogOut className="w-4 h-4" aria-hidden="true" />
+              </button>
             </div>
           ) : (
             <>
@@ -195,8 +215,9 @@ export const Sidebar: React.FC<SidebarProps> = ({
                   </span>
                 </div>
               </div>
-              <button onClick={onSignOut} className="mt-3 text-xs text-gray-400 hover:text-gray-600 transition-colors">
-                Sign out →
+              <button onClick={onSignOut} className="mt-3 flex items-center gap-1.5 text-xs text-gray-400 hover:text-gray-600 dark:hover:text-slate-200 transition-colors">
+                <LogOut className="w-3.5 h-3.5" aria-hidden="true" />
+                Sign out
               </button>
             </>
           )}
