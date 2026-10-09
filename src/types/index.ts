@@ -575,7 +575,7 @@ export type EmailTemplateType =
   | 'account_approved'
   | 'generic';
 
-export type EmailStatus = 'queued' | 'sent' | 'failed' | 'bounced';
+export type EmailStatus = 'queued' | 'sent' | 'failed' | 'bounced' | 'skipped';
 
 /** Account-owned notification preferences. `user_id` is the authenticated account (profiles.id = auth.users.id). */
 export interface EmailPreferences {

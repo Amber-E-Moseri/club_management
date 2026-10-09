@@ -1,4 +1,9 @@
 import { createClient } from 'https://esm.sh/@supabase/supabase-js@2.45.0';
+import {
+  evaluatePreference,
+  TRANSACTIONAL_TYPES,
+  type EmailPreferenceRow,
+} from '../_shared/email-preference-guard.ts';
 
 const corsHeaders = {
   'Access-Control-Allow-Origin': '*',
@@ -8,7 +13,7 @@ const corsHeaders = {
 type SendBody =
   | { action: 'send'; to: string; subject: string; html: string; text?: string; memberId?: string; templateType?: string }
   | { action: 'batch'; recipients: Array<{ email: string; memberId?: string; data?: Record<string, unknown> }>; subject: string; html?: string; text?: string; templateType?: string }
-  | { action: 'schedule'; to: string; subject: string; html: string; scheduledFor: string }
+  | { action: 'schedule'; to: string; subject: string; html: string; scheduledFor: string; memberId?: string; templateType?: string }
   | { action: 'resend'; messageId: string }
   | { action: 'track_open'; messageId: string; trackingToken: string };
 
@@ -39,6 +44,7 @@ Deno.serve(async (req) => {
     }
 
     const body = await req.json() as SendBody;
+
     if (body.action === 'track_open') {
       if (body.messageId && body.trackingToken) {
         await supabase.rpc('track_email_open', {
@@ -48,8 +54,10 @@ Deno.serve(async (req) => {
       }
       return json({ ok: true });
     }
+
     if (body.action === 'schedule') {
       await requireAuthorizedCaller(req, 'notifications.send');
+      const templateType = body.templateType ?? 'generic';
       const { data, error } = await supabase
         .from('scheduled_emails')
         .insert({
@@ -57,16 +65,35 @@ Deno.serve(async (req) => {
           subject: body.subject,
           html_content: body.html,
           scheduled_for: body.scheduledFor,
+          member_id: body.memberId ?? null,
+          template_type: templateType,
         })
         .select('id')
         .single();
       if (error) throw error;
       return json({ id: data.id });
     }
+
     if (body.action === 'resend') {
       await requireAuthorizedCaller(req, 'notifications.send');
-      const { data: log, error } = await supabase.from('email_log').select('*').eq('id', body.messageId).single();
+      const { data: log, error } = await supabase
+        .from('email_log')
+        .select('*')
+        .eq('id', body.messageId)
+        .single();
       if (error) throw error;
+
+      // Re-check preferences at resend time — the member may have opted out
+      // since the original send attempt.
+      const guardResult = await checkEmailPreference(log.member_id, log.template_type);
+      if (!guardResult.send) {
+        await supabase.from('email_log').update({
+          status: 'skipped',
+          failed_reason: `Resend skipped: ${guardResult.reason}`,
+        }).eq('id', body.messageId);
+        return json({ skipped: true, reason: guardResult.reason });
+      }
+
       const html = withOpenTrackingPixel(
         log.html_content ?? `<p>${escapeHtml(log.subject)}</p>`,
         log.id,
@@ -82,21 +109,33 @@ Deno.serve(async (req) => {
       }).eq('id', body.messageId);
       return json({ id: sent.id });
     }
+
     if (body.action === 'batch') {
       await requireAuthorizedCaller(req, 'notifications.send');
-      const results = [];
+      const templateType = body.templateType ?? 'generic';
+      let sent = 0;
+      let skipped = 0;
       for (const recipient of body.recipients) {
-        results.push(await sendAndLog({
+        const result = await sendAndLog({
           to: recipient.email,
           subject: body.subject,
           html: body.html ?? '<p>You have a new notification from BLW York Hub.</p>',
           text: body.text,
           memberId: recipient.memberId,
-          templateType: body.templateType ?? 'generic',
-        }));
+          templateType,
+        });
+        if (result.skipped) {
+          skipped++;
+        } else {
+          sent++;
+        }
       }
-      return json({ count: results.length, results });
+      // Return aggregate counts only — do not include per-recipient skip reasons
+      // to avoid exposing private preference information in the API response.
+      return json({ total: body.recipients.length, sent, skipped });
     }
+
+    // action: 'send'
     await requireAuthorizedCaller(req, 'notifications.send');
     const result = await sendAndLog({
       to: body.to,
@@ -106,14 +145,44 @@ Deno.serve(async (req) => {
       memberId: body.memberId,
       templateType: body.templateType ?? 'generic',
     });
-    return json(result);
+    if (result.skipped) {
+      return json({ skipped: true, reason: result.reason });
+    }
+    return json({ id: result.id, logId: result.logId });
   } catch (error) {
     const status = error instanceof HttpError ? error.status : 500;
     return json({ error: error instanceof Error ? error.message : 'Unknown email error' }, status);
   }
 });
 
+// ─── Authorization ────────────────────────────────────────────────────────────
+
+/**
+ * Internal dispatch: process-scheduled-emails invokes send-email with the
+ * shared EMAIL_CRON_SECRET as x-internal-dispatch.  This avoids the GoTrue
+ * user-JWT path, which rejects the service role key sent by functions.invoke().
+ *
+ * The secret is already present in Deno.env for process-scheduled-emails; no
+ * additional secret is required.  Callers outside the Supabase project cannot
+ * obtain it, and the 'send' action still enforces recipient preferences and
+ * anti-spam rules through checkEmailPreference / sendAndLog.
+ */
+const INTERNAL_DISPATCH_HEADER = 'x-internal-dispatch';
+
+function isInternalDispatch(req: Request): boolean {
+  const cronSecret = Deno.env.get('EMAIL_CRON_SECRET') ?? '';
+  return (
+    cronSecret.length > 0 &&
+    req.headers.get(INTERNAL_DISPATCH_HEADER) === cronSecret
+  );
+}
+
 async function requireAuthorizedCaller(req: Request, permission: string): Promise<string> {
+  // Internal server-to-server dispatch from process-scheduled-emails.
+  if (isInternalDispatch(req)) {
+    return 'internal-dispatch';
+  }
+
   const authHeader = req.headers.get('Authorization') ?? '';
   const jwt = authHeader.startsWith('Bearer ') ? authHeader.slice(7) : '';
   if (!jwt) throw new HttpError('Authentication required', 401);
@@ -128,7 +197,8 @@ async function requireAuthorizedCaller(req: Request, permission: string): Promis
     .eq('id', user.id)
     .single();
   if (profileError || !profile) throw new HttpError('Profile not found', 403);
-  // Only an approved (active) account may act; a pending or rejected account never holds administrative power.
+  // Only an approved (active) account may act; a pending or rejected account
+  // never holds administrative power.
   if (profile.status !== 'active') throw new HttpError('Not authorised to send email', 403);
   if (['admin', 'coordinator'].includes(profile.role)) return user.id;
 
@@ -151,6 +221,54 @@ async function requireAuthorizedCaller(req: Request, permission: string): Promis
   throw new HttpError('Not authorised to send email', 403);
 }
 
+// ─── Preference enforcement ───────────────────────────────────────────────────
+
+/**
+ * Fetch the email_preferences row for the given member and evaluate whether
+ * this send should proceed.  Uses service_role so the query bypasses RLS —
+ * the edge function acts on behalf of the system, not the recipient.
+ *
+ * Fail-closed: any DB error for a non-transactional type blocks delivery.
+ */
+async function checkEmailPreference(
+  memberId: string | null | undefined,
+  templateType: string,
+): Promise<{ send: true; reason: string } | { send: false; reason: string }> {
+  // Transactional emails bypass the DB query entirely.
+  if (TRANSACTIONAL_TYPES.has(templateType)) {
+    return { send: true, reason: 'transactional-exempt' };
+  }
+
+  // No identity → fail-closed.
+  if (!memberId) {
+    return { send: false, reason: 'no-identity' };
+  }
+
+  // Fetch the member's preference row.
+  const { data: prefs, error } = await supabase
+    .from('email_preferences')
+    .select(
+      'opt_out_all, meeting_reminders_8am, meeting_reminders_1hr, message_notifications, ' +
+      'habit_milestones, devotional_reminders, testimony_approved, weekly_digest, admin_announcements',
+    )
+    .eq('user_id', memberId)
+    .maybeSingle();
+
+  if (error) {
+    // DB error on a non-transactional send: fail-closed.
+    return { send: false, reason: 'preference-lookup-failed' };
+  }
+
+  // null means no row exists → use schema defaults via the pure evaluator.
+  return evaluatePreference(templateType, prefs as EmailPreferenceRow | null, memberId);
+}
+
+// ─── Send and log ─────────────────────────────────────────────────────────────
+
+type SendAndLogResult =
+  | { skipped: false; id: string; logId: string | undefined }
+  | { skipped: true;  reason: string; logId: string | undefined };
+
 async function sendAndLog(input: {
   to: string;
   subject: string;
@@ -158,7 +276,30 @@ async function sendAndLog(input: {
   text?: string;
   memberId?: string;
   templateType: string;
-}) {
+}): Promise<SendAndLogResult> {
+  // Enforce preferences BEFORE writing any log row.  This keeps the log clean:
+  // a skipped row documents the skip; an aborted check never logs at all.
+  const guardResult = await checkEmailPreference(input.memberId, input.templateType);
+
+  if (!guardResult.send) {
+    // Write a skipped log row for audit.  `failed_reason` carries the machine
+    // reason; coordinators can see these in the delivery history view.
+    const { data: skippedLog } = await supabase
+      .from('email_log')
+      .insert({
+        member_id: input.memberId ?? null,
+        recipient_email: input.to,
+        subject: input.subject,
+        template_type: input.templateType,
+        status: 'skipped',
+        failed_reason: guardResult.reason,
+      })
+      .select('id')
+      .single();
+    return { skipped: true, reason: guardResult.reason, logId: skippedLog?.id };
+  }
+
+  // Allowed: proceed with the normal send-and-log flow.
   const { data: log } = await supabase
     .from('email_log')
     .insert({
@@ -185,7 +326,7 @@ async function sendAndLog(input: {
         provider_message_id: sent.id,
       }).eq('id', log.id);
     }
-    return { id: sent.id, logId: log?.id };
+    return { skipped: false, id: sent.id, logId: log?.id };
   } catch (error) {
     if (log?.id) {
       await supabase
@@ -196,6 +337,8 @@ async function sendAndLog(input: {
     throw error;
   }
 }
+
+// ─── Provider ─────────────────────────────────────────────────────────────────
 
 async function sendProviderEmail(to: string, subject: string, html: string, text?: string): Promise<{ id: string }> {
   if (emailRelayUrl && emailRelaySecret) {
@@ -213,6 +356,8 @@ async function sendProviderEmail(to: string, subject: string, html: string, text
   }
   throw new Error('EMAIL_PROVIDER_NOT_CONFIGURED. Set EMAIL_RELAY_URL + EMAIL_RELAY_SECRET in Supabase project secrets.');
 }
+
+// ─── Utilities ────────────────────────────────────────────────────────────────
 
 function stripHtml(html: string) {
   return html.replace(/<[^>]*>/g, ' ').replace(/\s+/g, ' ').trim();
