@@ -51,7 +51,7 @@ function AppShell() {
     return <Login onSignIn={signIn} onSignUp={signUp} error={error} loading={loading} />;
   }
 
-  if (user.status === 'pending' || user.status === 'rejected') {
+  if (user.status === 'pending' || user.status === 'rejected' || user.status === 'inactive') {
     return <PendingApproval user={user} onSignOut={signOut} />;
   }
 

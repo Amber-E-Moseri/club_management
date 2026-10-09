@@ -120,10 +120,12 @@ try {
     const r = await h.newAnon().from(table).select('*').limit(1);
     expect(`anon is refused at the table level on ${table}`, !!r.error && r.error.code === '42501', r.error ? `${r.error.code} ${r.error.message}` : 'no error');
   }
-  for (const table of ['scheduled_emails', 'meeting_attendances', 'admin_bootstrap_audit']) {
+  for (const table of ['scheduled_emails', 'admin_bootstrap_audit']) {
     const r = await member.client.from(table).select('*').limit(1);
     expect(`authenticated has no table privilege on ${table} (server-side only)`, !!r.error && r.error.code === '42501', r.error ? `${r.error.code}` : 'no error');
   }
+  const attendanceSurface = await member.client.from('meeting_attendances').select('id').limit(1);
+  expect('authenticated has scoped meeting_attendances access (RLS, not blanket server-only denial)', !attendanceSurface.error, attendanceSurface.error?.message);
 
   // ---- approval is enforced by the database, not by the screen ----------------------------------------------------------------
   const seeded = await admin.from('people').insert({ full_name: `Cert Person ${h.run}`, email: `cert.person.${h.run}@example.test` }).select('id').single();

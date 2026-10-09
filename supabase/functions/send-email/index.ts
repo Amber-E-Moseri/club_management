@@ -10,7 +10,7 @@ type SendBody =
   | { action: 'batch'; recipients: Array<{ email: string; memberId?: string; data?: Record<string, unknown> }>; subject: string; html?: string; text?: string; templateType?: string }
   | { action: 'schedule'; to: string; subject: string; html: string; scheduledFor: string }
   | { action: 'resend'; messageId: string }
-  | { action: 'track_open'; messageId: string };
+  | { action: 'track_open'; messageId: string; trackingToken: string };
 
 const supabaseUrl = Deno.env.get('SUPABASE_URL') ?? '';
 const serviceRoleKey = Deno.env.get('SUPABASE_SERVICE_ROLE_KEY') ?? '';
@@ -28,9 +28,24 @@ class HttpError extends Error {
 Deno.serve(async (req) => {
   if (req.method === 'OPTIONS') return new Response('ok', { headers: corsHeaders });
   try {
+    if (req.method === 'GET') {
+      const url = new URL(req.url);
+      const messageId = url.searchParams.get('messageId');
+      const trackingToken = url.searchParams.get('trackingToken');
+      if (messageId && trackingToken) {
+        await supabase.rpc('track_email_open', { message_id: messageId, token: trackingToken });
+      }
+      return new Response(null, { status: 204, headers: corsHeaders });
+    }
+
     const body = await req.json() as SendBody;
     if (body.action === 'track_open') {
-      await supabase.from('email_log').update({ opened_at: new Date().toISOString() }).eq('id', body.messageId);
+      if (body.messageId && body.trackingToken) {
+        await supabase.rpc('track_email_open', {
+          message_id: body.messageId,
+          token: body.trackingToken,
+        });
+      }
       return json({ ok: true });
     }
     if (body.action === 'schedule') {
@@ -52,7 +67,12 @@ Deno.serve(async (req) => {
       await requireAuthorizedCaller(req, 'notifications.send');
       const { data: log, error } = await supabase.from('email_log').select('*').eq('id', body.messageId).single();
       if (error) throw error;
-      const sent = await sendProviderEmail(log.recipient_email, log.subject, log.html_content ?? `<p>${escapeHtml(log.subject)}</p>`, log.text_content ?? undefined);
+      const html = withOpenTrackingPixel(
+        log.html_content ?? `<p>${escapeHtml(log.subject)}</p>`,
+        log.id,
+        log.tracking_token,
+      );
+      const sent = await sendProviderEmail(log.recipient_email, log.subject, html, log.text_content ?? undefined);
       await supabase.from('email_log').update({
         status: 'sent',
         sent_at: new Date().toISOString(),
@@ -150,11 +170,14 @@ async function sendAndLog(input: {
       html_content: input.html,
       text_content: input.text ?? stripHtml(input.html),
     })
-    .select('id')
+    .select('id, tracking_token')
     .single();
 
   try {
-    const sent = await sendProviderEmail(input.to, input.subject, input.html, input.text);
+    const html = log?.id && log?.tracking_token
+      ? withOpenTrackingPixel(input.html, log.id, log.tracking_token)
+      : input.html;
+    const sent = await sendProviderEmail(input.to, input.subject, html, input.text);
     if (log?.id) {
       await supabase.from('email_log').update({
         status: 'sent',
@@ -193,6 +216,12 @@ async function sendProviderEmail(to: string, subject: string, html: string, text
 
 function stripHtml(html: string) {
   return html.replace(/<[^>]*>/g, ' ').replace(/\s+/g, ' ').trim();
+}
+
+function withOpenTrackingPixel(html: string, messageId: string, trackingToken: string) {
+  const baseUrl = `${supabaseUrl.replace(/\/$/, '')}/functions/v1/send-email`;
+  const pixel = `<img src="${baseUrl}?messageId=${encodeURIComponent(messageId)}&trackingToken=${encodeURIComponent(trackingToken)}" alt="" width="1" height="1" style="display:none" />`;
+  return html.includes('</body>') ? html.replace('</body>', `${pixel}</body>`) : `${html}${pixel}`;
 }
 
 function escapeHtml(value: string) {

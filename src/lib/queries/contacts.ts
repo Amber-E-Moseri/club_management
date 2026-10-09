@@ -46,6 +46,16 @@ export async function createContact(
 ): Promise<Contact> {
   const { data, error } = await supabase
     .from('contacts').insert(input).select().single();
+  if (error && input.idempotency_key && /duplicate key|unique/i.test(error.message ?? '')) {
+    const { data: existing, error: existingError } = await supabase
+      .from('contacts')
+      .select('*')
+      .eq('logged_by', input.logged_by)
+      .eq('idempotency_key', input.idempotency_key)
+      .maybeSingle();
+    if (existingError) throw new Error(existingError.message ?? 'Unknown error');
+    if (existing) return existing;
+  }
   if (error) throw new Error(error.message ?? 'Unknown error');
   return data;
 }

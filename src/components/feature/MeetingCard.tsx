@@ -122,7 +122,7 @@ export const MeetingCard: React.FC<Props> = ({
     {/* Footer */}
     <div className="flex items-center justify-between pt-2 border-t border-gray-100 dark:border-slate-700">
       <p className="text-xs text-gray-400">
-        {m.attendance_count ?? 0} confirmed
+        {typeof m.attendance_count === 'number' ? `${m.attendance_count} confirmed` : 'Attendance'}
       </p>
       <Button
         size="small"

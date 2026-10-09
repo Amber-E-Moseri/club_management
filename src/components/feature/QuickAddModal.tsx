@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useEffect, useMemo, useRef, useState } from 'react';
 import { Check } from 'lucide-react';
 import { Modal } from '../foundation/Modal';
 import { useTagsAndStatuses, useCells } from '../../hooks/useContacts';
@@ -29,20 +29,50 @@ const QuickAddContent: React.FC<QuickAddContentProps> = ({ user, onClose }) => {
   const [saving, setSaving] = useState(false);
   const [success, setSuccess] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const contactIdempotencyKey = useRef(makeIdempotencyKey());
 
   // Contact form state
   const [contactName, setContactName] = useState('');
   const [contactDate, setContactDate] = useState(today());
   const [contactTag, setContactTag] = useState('');
+  const [contactCellId, setContactCellId] = useState('');
 
   // Meeting form state
   const [meetingTitle, setMeetingTitle] = useState('');
   const [meetingDate, setMeetingDate] = useState(today());
   const [meetingTime, setMeetingTime] = useState('10:00');
   const [meetingCategory, setMeetingCategory] = useState<'general' | 'bsc' | 'cell' | 'leadership'>('cell');
+  const [meetingCellId, setMeetingCellId] = useState('');
 
   const { tags } = useTagsAndStatuses();
   const { cells } = useCells();
+
+  const manageableCells = useMemo(() => {
+    if (user.role === 'coordinator' || user.role === 'admin') return cells;
+    if (user.role === 'cell_leader') return cells.filter((cell) => cell.leader_id === user.id);
+    return [];
+  }, [cells, user.id, user.role]);
+
+  const selectedContactCellIsAllowed = manageableCells.some((cell) => cell.id === contactCellId);
+  const selectedMeetingCellIsAllowed = manageableCells.some((cell) => cell.id === meetingCellId);
+  const contactCellHelp =
+    manageableCells.length === 0
+      ? user.role === 'member'
+        ? 'Your account is not authorized to log outreach contacts under the current contact permissions.'
+        : 'No cells are available for your role. Ask a coordinator to assign you as the cell leader.'
+      : null;
+
+  useEffect(() => {
+    if (!contactCellId || !selectedContactCellIsAllowed) {
+      setContactCellId(manageableCells[0]?.id ?? '');
+    }
+  }, [contactCellId, manageableCells, selectedContactCellIsAllowed]);
+
+  useEffect(() => {
+    if (!meetingCellId || !selectedMeetingCellIsAllowed) {
+      setMeetingCellId(manageableCells[0]?.id ?? '');
+    }
+  }, [manageableCells, meetingCellId, selectedMeetingCellIsAllowed]);
 
   const handleSuccess = () => {
     setSuccess(true);
@@ -51,21 +81,25 @@ const QuickAddContent: React.FC<QuickAddContentProps> = ({ user, onClose }) => {
 
   const submitContact = async () => {
     if (!contactName.trim()) { setError('Contact name is required.'); return; }
-    const cellId = user.cellId ?? cells[0]?.id;
-    if (!cellId) { setError('No cell assigned. Contact your administrator.'); return; }
+    if (!contactCellId || !selectedContactCellIsAllowed) {
+      setError(contactCellHelp ?? 'Select an authorized cell before logging this contact.');
+      return;
+    }
     setSaving(true);
     setError(null);
     try {
       await createContact({
         contact_name: contactName.trim(),
-        cell_id: cellId,
+        cell_id: contactCellId,
         date_contacted: contactDate,
         tag: contactTag,
         follow_up_status: '',
         phone_hidden: false,
         is_member: false,
         logged_by: user.id,
+        idempotency_key: contactIdempotencyKey.current,
       });
+      contactIdempotencyKey.current = makeIdempotencyKey();
       handleSuccess();
     } catch (e) {
       setError(e instanceof Error ? e.message : 'Could not save contact.');
@@ -76,6 +110,10 @@ const QuickAddContent: React.FC<QuickAddContentProps> = ({ user, onClose }) => {
 
   const submitMeeting = async () => {
     if (!meetingTitle.trim()) { setError('Meeting title is required.'); return; }
+    if (meetingCategory === 'cell' && (!meetingCellId || !selectedMeetingCellIsAllowed)) {
+      setError('Select an authorized cell before scheduling a cell meeting.');
+      return;
+    }
     setSaving(true);
     setError(null);
     try {
@@ -85,6 +123,7 @@ const QuickAddContent: React.FC<QuickAddContentProps> = ({ user, onClose }) => {
         time: meetingTime,
         visibility: 'public',
         category: meetingCategory,
+        cell_id: meetingCategory === 'cell' ? meetingCellId : undefined,
         created_by: user.id,
       });
       handleSuccess();
@@ -177,10 +216,17 @@ const QuickAddContent: React.FC<QuickAddContentProps> = ({ user, onClose }) => {
               </select>
             </div>
           )}
+          <CellSelect
+            label="Cell"
+            value={contactCellId}
+            onChange={setContactCellId}
+            cells={manageableCells}
+            helpText={contactCellHelp ?? undefined}
+          />
           <button
             type="button"
             onClick={submitContact}
-            disabled={saving}
+            disabled={saving || manageableCells.length === 0}
             className="w-full py-2.5 rounded-xl bg-york-600 text-white text-sm font-semibold hover:bg-york-700 disabled:opacity-60 transition-colors"
           >
             {saving ? 'Saving…' : 'Log Contact'}
@@ -227,7 +273,7 @@ const QuickAddContent: React.FC<QuickAddContentProps> = ({ user, onClose }) => {
             <label className="block text-xs font-semibold text-gray-600 dark:text-slate-300 mb-1">Category</label>
             <select
               value={meetingCategory}
-              onChange={(e) => setMeetingCategory(e.target.value as typeof meetingCategory)}
+              onChange={(e) => { setMeetingCategory(e.target.value as typeof meetingCategory); setError(null); }}
               className="w-full rounded-xl border border-gray-200 dark:border-slate-600 bg-white dark:bg-slate-700 px-3 py-2 text-sm text-gray-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-york-600"
             >
               <option value="cell">Cell</option>
@@ -236,10 +282,23 @@ const QuickAddContent: React.FC<QuickAddContentProps> = ({ user, onClose }) => {
               <option value="leadership">Leadership</option>
             </select>
           </div>
+          {meetingCategory === 'cell' && (
+            <CellSelect
+              label="Cell"
+              value={meetingCellId}
+              onChange={setMeetingCellId}
+              cells={manageableCells}
+              helpText={
+                manageableCells.length === 0
+                  ? 'No cells are available for your role. Select a non-cell meeting category or ask a coordinator to update assignments.'
+                  : undefined
+              }
+            />
+          )}
           <button
             type="button"
             onClick={submitMeeting}
-            disabled={saving}
+            disabled={saving || (meetingCategory === 'cell' && manageableCells.length === 0)}
             className="w-full py-2.5 rounded-xl bg-york-600 text-white text-sm font-semibold hover:bg-york-700 disabled:opacity-60 transition-colors"
           >
             {saving ? 'Saving…' : 'Schedule Meeting'}
@@ -249,6 +308,47 @@ const QuickAddContent: React.FC<QuickAddContentProps> = ({ user, onClose }) => {
     </div>
   );
 };
+
+function makeIdempotencyKey() {
+  if (typeof crypto !== 'undefined' && 'randomUUID' in crypto) {
+    return crypto.randomUUID();
+  }
+  return `${Date.now()}-${Math.random().toString(36).slice(2)}`;
+}
+
+const CellSelect: React.FC<{
+  label: string;
+  value: string;
+  onChange: (value: string) => void;
+  cells: Array<{ id: string; name: string }>;
+  helpText?: string;
+}> = ({ label, value, onChange, cells, helpText }) => (
+  <div>
+    <label className="block text-xs font-semibold text-gray-600 dark:text-slate-300 mb-1">
+      {label} <span className="text-york-600">*</span>
+    </label>
+    <select
+      value={value}
+      onChange={(e) => onChange(e.target.value)}
+      disabled={cells.length === 0}
+      className="w-full rounded-xl border border-gray-200 dark:border-slate-600 bg-white dark:bg-slate-700 px-3 py-2 text-sm text-gray-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-york-600 disabled:opacity-60"
+      aria-describedby={helpText ? `${label.toLowerCase()}-cell-help` : undefined}
+    >
+      {cells.length === 0 ? (
+        <option value="">No authorized cells</option>
+      ) : (
+        cells.map((cell) => (
+          <option key={cell.id} value={cell.id}>{cell.name}</option>
+        ))
+      )}
+    </select>
+    {helpText && (
+      <p id={`${label.toLowerCase()}-cell-help`} className="mt-1 text-xs text-gray-500 dark:text-slate-400">
+        {helpText}
+      </p>
+    )}
+  </div>
+);
 
 export interface QuickAddModalProps {
   isOpen: boolean;

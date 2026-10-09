@@ -55,6 +55,7 @@ export function useContact(id: string | null) {
 export function useContactMutations(onSuccess?: () => void) {
   const [saving, setSaving] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const idempotencyKey = useRef(makeIdempotencyKey());
 
   const run = async (fn: () => Promise<unknown>) => {
     setSaving(true);
@@ -70,7 +71,12 @@ export function useContactMutations(onSuccess?: () => void) {
   };
 
   const save = (input: ContactInput & { logged_by: string }, id?: string) =>
-    run(() => id ? updateContact(id, input) : createContact(input));
+    run(async () => {
+      if (id) return updateContact(id, input);
+      const saved = await createContact({ ...input, idempotency_key: input.idempotency_key ?? idempotencyKey.current });
+      idempotencyKey.current = makeIdempotencyKey();
+      return saved;
+    });
 
   const archive = (id: string) => run(() => archiveContact(id));
   const remove   = (id: string) => run(() => deleteContact(id));
@@ -97,6 +103,13 @@ export function useContactMutations(onSuccess?: () => void) {
     });
 
   return { save, archive, remove, bulkArchive, bulkRemove, reassign, moveToCell, bulkImport, saving, error };
+}
+
+function makeIdempotencyKey() {
+  if (typeof crypto !== 'undefined' && 'randomUUID' in crypto) {
+    return crypto.randomUUID();
+  }
+  return `${Date.now()}-${Math.random().toString(36).slice(2)}`;
 }
 
 export function useTagsAndStatuses() {

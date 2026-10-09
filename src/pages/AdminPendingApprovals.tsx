@@ -15,7 +15,7 @@ interface PendingProfile {
   full_name: string;
   student_number: string | null;
   joined_at: string;
-  status: 'pending' | 'rejected';
+  status: 'pending' | 'inactive' | 'rejected';
 }
 
 const CAN_APPROVE = ['admin', 'coordinator'];

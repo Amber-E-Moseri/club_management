@@ -7,7 +7,7 @@ export interface AuthUser {
   email: string;
   name: string;
   role: 'coordinator' | 'admin' | 'cell_leader' | 'member';
-  status: 'pending' | 'active' | 'rejected';
+  status: 'pending' | 'active' | 'inactive' | 'rejected';
   cellId?: string;
   adminRole?: string;
   createdAt: Date;

@@ -237,6 +237,7 @@ export const Members: React.FC<Props> = ({ user }) => {
           memberId={selectedId}
           onClose={() => setSelectedId(null)}
           currentUser={user}
+          onSaved={fetchMembers}
         />
       )}
     </div>

@@ -395,9 +395,9 @@ test('T-16: getMembershipTransitions returns transitions newest-first', async ()
   expect(result[1].fromType).toBeNull();
 });
 
-test('T-17: duplicate phone returns the existing person for contact logging', async () => {
-  const personRow = {
-    id: PERSON_ID,
+test('T-17: phone-only matches do not automatically reuse an existing person', async () => {
+  const newPersonRow = {
+    id: PERSON_ID_2,
     full_name: 'Phone Match',
     email: null,
     phone: '+1 416 555 0100',
@@ -405,14 +405,14 @@ test('T-17: duplicate phone returns the existing person for contact logging', as
     updated_at: '2026-01-01',
   };
   const contactRow = {
-    id: CONTACT_ID, person_id: PERSON_ID, cell_id: 'cell-1', tag: 'visitor',
+    id: CONTACT_ID, person_id: PERSON_ID_2, cell_id: 'cell-1', tag: 'visitor',
     follow_up_status: null, follow_up_assignee: null, date_contacted: '2026-09-15',
     notes: 'Met at outreach', logged_by: ACTOR_ID, archived: false, is_member: false, member_id: null,
   };
 
   (supabase.from as jest.Mock)
-    .mockReturnValueOnce(makeChain(personRow)) // phone lookup
-    .mockReturnValueOnce(makeChain(personRow)) // fetch person
+    .mockReturnValueOnce(makeChain(newPersonRow)) // insert person
+    .mockReturnValueOnce(makeChain(newPersonRow)) // fetch person
     .mockReturnValueOnce(makeChain(contactRow)); // insert contact
 
   const { person, contact } = await createContactPerson({
@@ -424,8 +424,8 @@ test('T-17: duplicate phone returns the existing person for contact logging', as
     notes: 'Met at outreach',
   });
 
-  expect(person.id).toBe(PERSON_ID);
-  expect(contact.personId).toBe(PERSON_ID);
+  expect(person.id).toBe(PERSON_ID_2);
+  expect(contact.personId).toBe(PERSON_ID_2);
 });
 
 test('T-18: same name with different identity data remains different people', async () => {
@@ -439,11 +439,9 @@ test('T-18: same name with different identity data remains different people', as
   const contact2Row = { ...contact1Row, id: 'contact-uuid-2', person_id: PERSON_ID_2 };
 
   (supabase.from as jest.Mock)
-    .mockReturnValueOnce(makeChain(null)) // phone lookup 1
     .mockReturnValueOnce(makeChain(person1Row)) // insert person 1
     .mockReturnValueOnce(makeChain(person1Row)) // fetch person 1
     .mockReturnValueOnce(makeChain(contact1Row)) // insert contact 1
-    .mockReturnValueOnce(makeChain(null)) // phone lookup 2
     .mockReturnValueOnce(makeChain(person2Row)) // insert person 2
     .mockReturnValueOnce(makeChain(person2Row)) // fetch person 2
     .mockReturnValueOnce(makeChain(contact2Row)); // insert contact 2

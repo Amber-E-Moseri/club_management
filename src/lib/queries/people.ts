@@ -41,8 +41,10 @@ export async function createContactPerson(input: {
   tag?: string | null;
   notes?: string | null;
   dateContacted?: string;
+  idempotencyKey?: string;
 }): Promise<{ person: Person; contact: ContactRelationship }> {
-  // Duplicate guard: if email or phone is provided, reuse the existing person.
+  // Duplicate guard: a confirmed email may identify the same person. Phone-only
+  // matches are ambiguous and must be resolved by explicit staff review.
   let personId: string | null = null;
   if (input.email) {
     const { data: existing } = await supabase
@@ -51,10 +53,6 @@ export async function createContactPerson(input: {
       .eq('email', input.email.trim())
       .maybeSingle();
     if (existing) personId = existing.id as string;
-  }
-  if (!personId && input.phone) {
-    const existing = await findPersonByPhone(input.phone);
-    if (existing) personId = existing.id;
   }
 
   // Create person if not found
@@ -88,12 +86,32 @@ export async function createContactPerson(input: {
       tag: input.tag ?? null,
       notes: input.notes ?? null,
       date_contacted: input.dateContacted ?? new Date().toISOString().split('T')[0],
+      idempotency_key: input.idempotencyKey ?? null,
     })
     .select(
       'id, person_id, cell_id, tag, follow_up_status, follow_up_assignee, ' +
       'date_contacted, notes, logged_by, archived, is_member, member_id'
     )
     .single();
+
+  if (contactErr && input.idempotencyKey && /duplicate key|unique/i.test(contactErr.message ?? '')) {
+    const { data: existingContact, error: existingErr } = await supabase
+      .from('contacts')
+      .select(
+        'id, person_id, cell_id, tag, follow_up_status, follow_up_assignee, ' +
+        'date_contacted, notes, logged_by, archived, is_member, member_id'
+      )
+      .eq('logged_by', input.loggedBy)
+      .eq('idempotency_key', input.idempotencyKey)
+      .maybeSingle();
+    if (existingErr) throw new Error(existingErr.message);
+    if (existingContact) {
+      return {
+        person: mapPerson(personRow as unknown as Record<string, unknown>),
+        contact: mapContact(existingContact as unknown as Record<string, unknown>),
+      };
+    }
+  }
 
   if (contactErr || !contactRow) throw new Error(contactErr?.message ?? 'Contact insert failed');
 

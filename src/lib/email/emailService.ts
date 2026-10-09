@@ -90,9 +90,9 @@ export async function resendEmail(messageId: string): Promise<void> {
 /**
  * Record that the tracking pixel was loaded (sets opened_at in email_log).
  */
-export async function trackEmailOpen(messageId: string): Promise<void> {
+export async function trackEmailOpen(messageId: string, trackingToken: string): Promise<void> {
   const { error } = await supabase.functions.invoke('send-email', {
-    body: { action: 'track_open', messageId },
+    body: { action: 'track_open', messageId, trackingToken },
   });
   if (error) throw new Error(`Track open failed: ${error.message}`);
 }

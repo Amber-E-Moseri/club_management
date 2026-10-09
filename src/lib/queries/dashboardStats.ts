@@ -186,7 +186,7 @@ export async function getUpcomingMeetings(
   const today = toDate(new Date());
   let query = supabase
     .from('meetings')
-    .select('*, meeting_attendances(id,user_id)')
+    .select('*')
     .gte('date', today)
     .order('date', { ascending: true })
     .order('time', { ascending: true })
@@ -201,7 +201,5 @@ export async function getUpcomingMeetings(
 
   return (data ?? []).map((row: Record<string, any>) => ({
     ...(row as Meeting),
-    attendance_count: row.meeting_attendances?.length ?? 0,
-    user_confirmed: row.meeting_attendances?.some((a: { user_id: string }) => a.user_id === _userId) ?? false,
   }));
 }

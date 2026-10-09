@@ -96,6 +96,7 @@ export interface Contact {
   is_member: boolean;
   member_id?: string;
   logged_by: string;
+  idempotency_key?: string;
   archived: boolean;
   created_at: string;
   updated_at: string;
@@ -113,6 +114,7 @@ export interface ContactInput {
   date_contacted: string;
   notes?: string;
   is_member: boolean;
+  idempotency_key?: string;
 }
 
 export interface ContactFilters {
