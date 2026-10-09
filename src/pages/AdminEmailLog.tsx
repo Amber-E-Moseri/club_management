@@ -177,6 +177,11 @@ export const AdminEmailLog: React.FC<Props> = ({ user }) => {
                         setSubject(next.subject);
                         setBody(next.body_markdown);
                         setSelectedRecipientIds(next.recipient_ids);
+                        // Restore template name so Save Template / Duplicate remain usable
+                        const linkedTemplate = next.template_id
+                          ? templates.find((t) => t.id === next.template_id)
+                          : undefined;
+                        setTemplateName(linkedTemplate?.name ?? '');
                       }
                     }}
                   >

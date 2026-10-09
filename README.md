@@ -1,165 +1,211 @@
 # BLW York Hub
 
-Ministry operating hub for the BLW York campus — member portal, outreach CRM, growth tracking, and admin tools built on React + Supabase.
+The ministry operating hub for the BLW York campus: one place for member onboarding and approval, outreach follow-up, spiritual-growth tools, events, meetings and communications.
 
-## Tech Stack
+Built with React, TypeScript and Supabase, with row-level security and a repeatable security-certification suite as first-class parts of the project.
 
-| Layer | Library |
+---
+
+## What it does
+
+| Area | What members and leaders can do |
 |---|---|
-| UI | React 18 + TypeScript |
-| Routing | React Router v6 |
-| Styling | Tailwind CSS 3 |
-| Database | Supabase (PostgreSQL) |
-| Email | Gmail relay via Nodemailer (`api/email-relay.ts`) — Supabase Edge Function forwards to Vercel |
-| Push | Web Push API (Supabase-backed subscriptions) |
-| Charts | Recharts |
-| Dates | date-fns |
-| Deployment | Vercel |
+| **Members** | Sign up, wait for admin approval, manage a profile, browse the directory (by role and cell) |
+| **Outreach** | Log contacts, tag them, assign follow-ups, track a pipeline, view an audit trail of changes |
+| **Growth** | Read monthly devotionals, track habits, log daily confessions, share testimonies, follow the book of the month and weekly messages |
+| **Events** | Create events, RSVP, send reminders |
+| **Meetings** | Record meetings, agenda items and attendance, with Zoom link and attendance integration |
+| **Communications** | Announcements, email (templates, composer, scheduling, unsubscribe) and web push notifications |
+| **Admin** | Pending approvals, roles and fine-grained permissions, reports, CSV exports, email log, Zoom settings |
 
-## Getting Started
+### Roles
 
-### 1. Install dependencies
+The app has four roles: `admin`, `coordinator`, `cell_leader` and `member`. Admins can also grant individual permissions (for example `contacts.view_all`, `testimonies.approve`, `reports.generate`, `integrations.manage`). New accounts stay in a pending state until an admin approves them. The full capability table is in [docs/blw-authorization-matrix.md](docs/blw-authorization-matrix.md).
+
+---
+
+## Tech stack
+
+| Layer | Choice |
+|---|---|
+| UI | React 18, TypeScript, React Router 6 |
+| Styling | Tailwind CSS 3 (York red theme), dark mode |
+| Data and auth | Supabase (PostgreSQL, Auth, Storage, Edge Functions) |
+| Email | Supabase Edge Function → Vercel serverless relay (`api/email-relay.ts`) → Gmail SMTP via Nodemailer |
+| Push | Web Push (VAPID), PWA with service worker |
+| Charts and dates | Recharts, date-fns |
+| Tests | Jest and React Testing Library, Playwright, SQL and Node certification scripts |
+| Hosting | Vercel (static build plus serverless function) |
+
+### How email flows
+
+```
+App ──► Edge Function (send-email) ──► Vercel /api/email-relay ──► Gmail SMTP
+              │                              (shared-secret auth)
+              └─► email_log / scheduled_emails (Postgres)
+```
+
+The Gmail credentials exist only on Vercel. The relay rejects any request without the shared secret. Unsubscribe links are signed inside the `unsubscribe` Edge Function, so no signing key ever reaches the browser.
+
+---
+
+## Getting started
+
+**Prerequisites:** Node 20+, a Supabase project (or the Supabase CLI for a local stack), and a Vercel project if you want email.
 
 ```bash
 npm install
+cp .env.example .env     # then fill in the values below
+npm start                # http://localhost:3000
 ```
 
-### 2. Configure environment
+### Environment variables
+
+**Browser** (`.env`; every `REACT_APP_*` value is public in the built bundle):
+
+| Variable | Purpose |
+|---|---|
+| `REACT_APP_SUPABASE_URL` | Supabase project URL |
+| `REACT_APP_SUPABASE_ANON_KEY` | Supabase anon key (safe to expose; protected by RLS) |
+| `REACT_APP_PUBLIC_APP_URL` | Public site URL, used in links |
+| `REACT_APP_VAPID_PUBLIC_KEY` | Web Push public key (`node scripts/generate-vapid-keys.js`) |
+| `REACT_APP_GOOGLE_DRIVE_API_KEY`, `REACT_APP_GOOGLE_DRIVE_UPLOAD_ENDPOINT` | Optional, for Drive previews and uploads |
+| `REACT_APP_SENTRY_DSN` | Optional error reporting |
+
+**Vercel** (dashboard, never `.env`): `GMAIL_USER`, `GMAIL_APP_PASSWORD`, `EMAIL_RELAY_SECRET`
+
+**Supabase Edge Function secrets** (Dashboard → Edge Functions → Secrets): `EMAIL_RELAY_URL`, `EMAIL_RELAY_SECRET` (same value as Vercel), `EMAIL_FROM`, `EMAIL_CRON_SECRET`, `UNSUBSCRIBE_SECRET`, `VAPID_PRIVATE_KEY`, plus Zoom credentials. See [docs/email-setup.md](docs/email-setup.md).
+
+> Never put a server secret in a `REACT_APP_*` variable. Create React App bundles all of them into the client.
+
+### Database
+
+`supabase/migrations/` (000 → 029) is the **only** place the schema changes. Apply it in order:
 
 ```bash
-cp .env.example .env
+npx supabase db push              # hosted project
+npx supabase db reset --local     # local stack, replays everything from empty
 ```
 
-Required variables:
+Read [docs/database-and-identity.md](docs/database-and-identity.md) before writing a migration. It covers the identity model (everything keys on `user_id`), privilege rules and migration conventions.
 
-```
-REACT_APP_SUPABASE_URL=https://your-project.supabase.co
-REACT_APP_SUPABASE_ANON_KEY=your-anon-key
-REACT_APP_PUBLIC_APP_URL=https://your-app.vercel.app
-REACT_APP_VAPID_PUBLIC_KEY=...
+---
 
-# Vercel environment variables (set in Vercel dashboard, not .env):
-GMAIL_USER=club-sender@example.com
-GMAIL_APP_PASSWORD=xxxx xxxx xxxx xxxx   # Google App Password
-EMAIL_RELAY_SECRET=<random 32-char token>
-
-# Supabase project secrets (Dashboard > Edge Functions > Secrets):
-# EMAIL_RELAY_URL=https://<your-vercel-app>.vercel.app/api/email-relay
-# EMAIL_RELAY_SECRET=<same token as above>
-# EMAIL_FROM=BLW York Hub <club-sender@example.com>
-# VAPID_PRIVATE_KEY=...
-```
-
-### 3. Run the dev server
-
-```bash
-npm start
-```
-
-Open [http://localhost:3000](http://localhost:3000).
-
-### 4. Build for production
-
-```bash
-npm run build
-```
-
-## Project Structure
+## Project structure
 
 ```
 src/
 ├── components/
-│   ├── foundation/     # Button, Card, Input, Badge, Modal, Tag
-│   ├── layout/         # MainLayout, Navigation, Sidebar, Header, ProtectedRoute
-│   └── feature/        # StatCard, EventCard, ContactCard, MeetingCard, HabitCard,
-│                       # TestimonyCard, QuickAddModal, GlobalSearch, and more
-├── pages/              # One file per route — see Navigation below
-├── hooks/              # useAuth, useEvents, useContacts, useHabits, useMeetings,
-│                       # useTestimonies, useConfessions, useWeeklyMessages, …
+│   ├── foundation/    # Button, Card, Input, Badge, Modal, Tag
+│   ├── layout/        # MainLayout, Sidebar, Header, Navigation, ProtectedRoute
+│   ├── feature/       # Domain components (ContactTable, EventCard, MeetingForm, …)
+│   ├── dashboard/     # Dashboard cards and sections
+│   └── people/        # Member directory and detail panel
+├── pages/             # One file per route
+├── hooks/             # Data and UI hooks (useAuth, useContacts, useEvents, …)
 ├── lib/
-│   ├── supabase.ts     # Supabase client
-│   ├── queries/        # Typed query modules per domain
-│   ├── email/          # Email template helpers
-│   ├── push/           # Push notification helpers
-│   ├── zoom.ts         # Zoom meeting link helpers
-│   └── utils.ts        # Shared utilities
-├── types/              # TypeScript interfaces
-└── styles/
-    └── globals.css     # Tailwind + component classes
+│   ├── queries/       # Typed Supabase query modules, one per domain
+│   ├── email/         # Templates, composer, send service
+│   ├── push/          # Web Push helpers
+│   ├── zoom/          # Zoom integration
+│   ├── csv/           # Contact import
+│   ├── permissions.ts # Admin permission catalogue
+│   └── supabase.ts    # Client
+├── types/             # Shared TypeScript types
+├── i18n/              # Locale strings
+└── __tests__/         # Unit and contract tests
 api/
-└── email-relay.ts      # Vercel serverless function — Gmail SMTP relay
+└── email-relay.ts     # Vercel function: authenticated Gmail SMTP relay
 supabase/
-└── migrations/         # Numbered SQL migrations (apply in order)
-docs/                   # Architecture docs, prototype audit, data model
+├── migrations/        # Numbered, idempotent SQL
+├── functions/         # send-email, process-scheduled-emails, unsubscribe
+└── verification/      # Release certification suite (see Testing)
+e2e/                   # Playwright specs
+docs/                  # Architecture, data model, authorization, deployment
+scripts/               # VAPID key generator, seed script
 ```
 
-## Navigation (7 primary destinations)
+---
 
-| Route | Page | Description |
-|---|---|---|
-| `/` | Dashboard | Ministry ops header, stat chips, upcoming events + meetings |
-| `/people` | Members | Member directory with filters, person detail panel |
-| `/outreach` | Outreach | Contact CRM — list, pipeline board, follow-up tracking |
-| `/growth` | Growth | Devotionals, habits, confessions, testimonies, books, messages |
-| `/events` | Events | Event list, RSVP management |
-| `/meetings` | MeetingsHub | Meeting log, agenda items, action tracking |
-| `/admin` | AdminHub | Roles, approvals, data exports, email log, Zoom settings |
+## Routes
 
-## Supabase Schema (key tables)
-
-| Table | Purpose |
+| Route | Page |
 |---|---|
-| `profiles` | Member records — name, email, role, cell, joined_at |
-| `events` / `event_rsvps` | Events and attendance |
-| `contacts` | Outreach CRM contacts (includes `follow_up_date`) |
-| `contact_tags` | Tags on outreach contacts |
-| `contact_follow_ups` | Follow-up assignments per contact |
-| `contact_audit_log` | Admin-visible audit trail for contact changes |
-| `devotionals` | Daily devotional content |
-| `habits` / `habit_entries` | Personal habit tracking |
-| `confessions` | Daily confessions log |
-| `testimonies` | Testimony submissions + comments |
-| `weekly_messages` | Weekly message library |
-| `books` | Book of the month |
-| `meetings` / `meeting_items` | Meeting records and agenda items |
-| `push_subscriptions` | Web push device endpoints, one row per device, owned by `user_id` |
-| `email_preferences` | Per-account email opt-in settings, one row per `user_id` |
-| `push_notification_log` | Delivery history per recipient `user_id` (written by the backend only) |
+| `/` | Dashboard |
+| `/members` | Member directory |
+| `/contacts` | Outreach CRM |
+| `/growth` | Growth hub |
+| `/devotionals`, `/habits`, `/confessions`, `/testimonies`, `/books`, `/messages` | Growth tools |
+| `/events` | Events and RSVPs |
+| `/meetings` | Meetings hub |
+| `/announcements` | Announcements |
+| `/profile`, `/email-preferences` | Account settings |
+| `/admin` | Admin hub, with `/admin/pending`, `/admin/roles`, `/admin/devotionals`, `/admin/testimonies`, `/admin/reports`, `/admin/contact-reports`, `/admin/exports`, `/admin/email-log`, `/admin/zoom` |
 
-Apply every migration in order with `npx supabase db push` (or `npx supabase db reset --local` for a local database). `supabase/migrations/` is the only place the schema changes; see [docs/database-and-identity.md](docs/database-and-identity.md) for the identity model, privilege rules and migration rules.
+---
 
-Migration 013 adds the `account_approved` email template type to `email_log`. Migration 012 adds `follow_up_date` to `contacts`. Migration 011 adds `contact_tags`, `contact_follow_ups`, and `contact_audit_log`.
+## Database overview
+
+Every table has RLS enabled, `anon` has no access, and `authenticated` privileges are granted explicitly rather than by default.
+
+| Domain | Tables |
+|---|---|
+| Identity and access | `profiles`, `memberships`, admin roles and permissions |
+| People and outreach | people records, `contacts`, `contact_tags`, `contact_follow_ups`, `contact_audit_log` |
+| Events and meetings | `events`, `event_rsvps`, `meetings`, `meeting_attendances`, `zoom_settings`, `zoom_attendance` |
+| Growth | `monthly_devotionals`, `devotional_daily_pages`, `devotional_views`, `habit_templates`, `habit_entries`, `confessions`, `confession_declarations`, `testimonies`, `prayer_requests`, `books_of_month`, `weekly_messages` |
+| Foundation school | `foundation_school_classes`, `foundation_school_enrollments`, `foundation_school_progress` |
+| Communications | `announcements`, `email_log`, `scheduled_emails`, `email_preferences`, `push_subscriptions`, `push_notification_log` |
+
+The data model is in [docs/blw-data-model.md](docs/blw-data-model.md).
+
+---
 
 ## Testing
 
 ```bash
-npm test          # Unit tests (Jest + React Testing Library)
-npm run e2e       # End-to-end (Playwright)
+npm test          # Jest unit and contract tests (run in CI)
+npm run e2e       # Playwright end-to-end
 npm run e2e:ui    # Playwright UI mode
 ```
 
-Release certification (local Supabase only, fake data) is described in [supabase/verification/README.md](supabase/verification/README.md).
+The Jest suite is heavy on security contracts: authorization, identity, approval flow, schema, email relay and export logic.
 
-## Color Reference — York Red Theme
+**Release certification** is a separate, stricter layer that runs against a *local* Supabase stack with fake data. It replays every migration from empty, compares the schema against a golden fingerprint, and exercises auth, authorization, email and push, storage and Edge Function security with real accounts. The harnesses refuse to run against anything but localhost. The step-by-step runbook is [supabase/verification/README.md](supabase/verification/README.md).
 
-| Token | Hex | Use |
-|---|---|---|
-| `york-600` | `#E31837` | Primary buttons, active nav, accents |
-| `york-700` | `#C11628` | Hover state |
-| `red-light` | `#F5E9EA` | Active nav background, light tints |
-| `york-100` | `#FFEBEB` | Badge backgrounds |
+---
 
 ## Deployment
 
-Follow [docs/clean-production-deployment.md](docs/clean-production-deployment.md): a brand-new Supabase project built from the
-migrations, Auth configuration, Storage, Edge Function deployment and secrets (by name), the one-time first-administrator
-bootstrap, the cutover and the rollback to the archived project. In short: Vercel build command `npm run build`, output
-directory `build`, SPA rewrite in `vercel.json`, production domain in the Supabase Auth redirect URLs.
+1. Create a fresh Supabase project and apply all migrations.
+2. Configure Auth redirect URLs, Storage and Edge Function secrets.
+3. Deploy the Edge Functions: `npx supabase functions deploy`.
+4. Deploy to Vercel: build command `npm run build`, output directory `build`. `vercel.json` already contains the SPA rewrite and the `/api` passthrough.
+5. Bootstrap the first administrator.
 
-## Feature Notes
+The full runbook, including cutover and rollback, is [docs/clean-production-deployment.md](docs/clean-production-deployment.md).
 
-- Global search opens with `Ctrl+K` / `Cmd+K`.
-- New members require admin approval before accessing the hub.
-- Push notifications use the Web Push API; VAPID keys must be set in env vars.
-- Dark mode is stored in `localStorage` under `blw-theme`.
-- Prototype reference: `BLW_York_Hub_v2.html` — canonical UX reference for all UI decisions.
+---
+
+## Feature notes
+
+- **Global search:** `Ctrl+K` / `Cmd+K`.
+- **Approval gate:** new members cannot reach the hub until an admin approves them.
+- **PWA:** installable, with an install banner and push permission prompt.
+- **Theme:** light and dark; the choice is stored in `localStorage` under `blw-theme`.
+- **Brand colors:** `york-600 #E31837` (primary), `york-700 #C11628` (hover), `york-100 #FFEBEB` (badges), `red-light #F5E9EA` (active nav background).
+
+---
+
+## Documentation index
+
+| Doc | Topic |
+|---|---|
+| [docs/blw-authorization-matrix.md](docs/blw-authorization-matrix.md) | Who can do what |
+| [docs/database-and-identity.md](docs/database-and-identity.md) | Identity model, privileges, migration rules |
+| [docs/blw-data-model.md](docs/blw-data-model.md) | Tables and relationships |
+| [docs/blw-state-authority.md](docs/blw-state-authority.md) | Where each piece of state lives |
+| [docs/email-setup.md](docs/email-setup.md) | Gmail relay and Edge Function setup |
+| [docs/clean-production-deployment.md](docs/clean-production-deployment.md) | Production build, cutover, rollback |
+| [docs/blw-v2-product-map.md](docs/blw-v2-product-map.md) | Product scope |
+| [supabase/verification/README.md](supabase/verification/README.md) | Release certification runbook |
