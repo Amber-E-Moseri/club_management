@@ -46,12 +46,12 @@ describe('meeting attendance access hardening', () => {
   test('SQL certification covers member, pending, rejected, coordinator, owner, and leader cases', () => {
     const sql = read('supabase/verification/meeting_attendance_access_certification.sql');
 
-    expect(sql).toContain('active member must see only their own attendance row');
-    expect(sql).toContain('pending member must not read attendance rows');
-    expect(sql).toContain('rejected member must not read attendance rows');
-    expect(sql).toContain('coordinator must read attendance rows');
-    expect(sql).toContain('cell leader must read attendance rows');
-    expect(sql).toContain('meeting owner must read attendance rows');
-    expect(sql).toContain('dashboard meeting query without attendance embedding must remain readable');
+    expect(sql).toContain('active member sees only their own attendance row');
+    expect(sql).toContain('pending member cannot read attendance rows');
+    expect(sql).toContain('rejected member cannot read attendance rows');
+    expect(sql).toContain('coordinator reads all attendance rows for export/management');
+    expect(sql).toContain('cell leader reads all attendance rows for their cell meeting');
+    expect(sql).toContain('meeting owner reads all attendance rows for owned meeting');
+    expect(sql).toContain('dashboard meeting query without attendance embedding remains readable');
   });
 });
