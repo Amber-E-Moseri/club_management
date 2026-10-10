@@ -1,9 +1,8 @@
 import { createClient } from 'https://esm.sh/@supabase/supabase-js@2.45.0';
 
-const supabase = createClient(
-  Deno.env.get('SUPABASE_URL') ?? '',
-  Deno.env.get('SUPABASE_SERVICE_ROLE_KEY') ?? '',
-);
+// Read env-vars once at module load; they are available before the first request.
+const supabaseUrl = Deno.env.get('SUPABASE_URL') ?? '';
+const supabaseServiceRoleKey = Deno.env.get('SUPABASE_SERVICE_ROLE_KEY') ?? '';
 const unsubscribeSecret = Deno.env.get('UNSUBSCRIBE_SECRET') ?? '';
 
 const preferenceByType: Record<string, string> = {
@@ -26,6 +25,17 @@ Deno.serve(async (req) => {
     const userId = payload.userId;
     const preference = preferenceByType[payload.notifType || ''];
     if (!userId || !preference) throw new Error('Invalid unsubscribe token');
+
+    // Create a per-request service-role client with an explicit Authorization header.
+    // Unsubscribe links arrive as bare GETs from email clients (no auth headers).
+    // A module-level client can lose its service-role context when the Supabase auth
+    // module detects no incoming JWT, causing PostgREST to reject the upsert.
+    // Forcing the key in global.headers guarantees service-role bypass of RLS for
+    // every request, regardless of whether the caller supplied an Authorization header.
+    const supabase = createClient(supabaseUrl, supabaseServiceRoleKey, {
+      auth: { autoRefreshToken: false, persistSession: false },
+      global: { headers: { Authorization: `Bearer ${supabaseServiceRoleKey}` } },
+    });
 
     const { error: upsertError } = await supabase
       .from('email_preferences')
