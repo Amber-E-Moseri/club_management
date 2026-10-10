@@ -50,19 +50,47 @@ export async function createContactPerson(input: {
     const { data: existing } = await supabase
       .from('people')
       .select('id')
-      .eq('email', input.email.trim())
+      .ilike('email', input.email.trim())
       .maybeSingle();
     if (existing) personId = existing.id as string;
   }
 
   // Create person if not found
   if (!personId) {
-    const person = await createPerson({
-      fullName: input.fullName,
-      email: input.email,
-      phone: input.phone,
-    });
-    personId = person.id;
+    try {
+      const person = await createPerson({
+        fullName: input.fullName,
+        email: input.email,
+        phone: input.phone,
+      });
+      personId = person.id;
+    } catch (err) {
+      const msg = err instanceof Error ? err.message : '';
+      if (/duplicate key|violates unique/i.test(msg)) {
+        if (input.email && /email/i.test(msg)) {
+          // Concurrent insert race: another request just created this person —
+          // retry the lookup so both callers share the same person record.
+          const { data: retried } = await supabase
+            .from('people')
+            .select('id')
+            .ilike('email', input.email.trim())
+            .maybeSingle();
+          if (retried) {
+            personId = retried.id as string;
+          } else {
+            throw err;
+          }
+        } else if (/phone/i.test(msg)) {
+          throw new Error(
+            'ambiguous-phone: a person with this phone number already exists and requires staff review before a new record can be created'
+          );
+        } else {
+          throw err;
+        }
+      } else {
+        throw err;
+      }
+    }
   }
 
   // Fetch the person row (either found or freshly created)

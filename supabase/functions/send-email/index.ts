@@ -244,6 +244,16 @@ async function checkEmailPreference(
     return { send: false, reason: 'no-identity' };
   }
 
+  // Only active members are eligible recipients.
+  const { data: profile } = await supabase
+    .from('profiles')
+    .select('status')
+    .eq('id', memberId)
+    .maybeSingle();
+  if (!profile || profile.status !== 'active') {
+    return { send: false, reason: 'non-active-member' };
+  }
+
   // Fetch the member's preference row.
   const { data: prefs, error } = await supabase
     .from('email_preferences')
@@ -282,8 +292,13 @@ async function sendAndLog(input: {
   const guardResult = await checkEmailPreference(input.memberId, input.templateType);
 
   if (!guardResult.send) {
-    // Write a skipped log row for audit.  `failed_reason` carries the machine
-    // reason; coordinators can see these in the delivery history view.
+    // Unknown address (no identity) or non-active member: skip silently — there
+    // is no legitimate account to audit against, so no log row is written.
+    if (guardResult.reason === 'no-identity' || guardResult.reason === 'non-active-member') {
+      return { skipped: true, reason: guardResult.reason, logId: undefined };
+    }
+    // All other skip reasons (opt-out, preference): write a skipped log row so
+    // coordinators can see the delivery history and diagnose preference issues.
     const { data: skippedLog } = await supabase
       .from('email_log')
       .insert({
