@@ -385,6 +385,19 @@ deno_version = 2
 # [edge_runtime.secrets]
 # secret_key = "env(SECRET_VALUE)"
 
+# send-email GET path serves email tracking pixels — mail clients call these
+# without any auth headers, so JWT verification must be disabled.  The function
+# itself only touches data through service_role; RPC-level auth is inside the
+# function (track_email_open validates the HMAC token).
+[functions.send-email]
+verify_jwt = false
+
+# unsubscribe links are clicked by recipients in their email client — they arrive
+# without any auth headers.  The function validates the HMAC-signed token in the
+# query string before touching any data.
+[functions.unsubscribe]
+verify_jwt = false
+
 [analytics]
 enabled = true
 port = 54327
