@@ -53,15 +53,13 @@ begin
     (rejected_member_id, 'cert.032.rej_member@example.test',      'authenticated', 'authenticated', '{"full_name":"Cert Rejected Member"}', now(), now(), '', now())
   on conflict do nothing;
 
-  insert into public.profiles (id, email, full_name, role, status)
-  values
-    (active_leader_id,   'cert.031.active_leader@example.test',   'Cert Active Leader',   'cell_leader',  'active'),
-    (rejected_leader_id, 'cert.031.rej_leader@example.test',      'Cert Rejected Leader', 'cell_leader',  'rejected'),
-    (inactive_leader_id, 'cert.031.inact_leader@example.test',    'Cert Inactive Leader', 'cell_leader',  'inactive'),
-    (pending_member_id,  'cert.032.pending_member@example.test',  'Cert Pending Member',  'member',       'pending'),
-    (active_member_id,   'cert.032.active_member@example.test',   'Cert Active Member',   'member',       'active'),
-    (rejected_member_id, 'cert.032.rej_member@example.test',      'Cert Rejected Member', 'member',       'rejected')
-  on conflict do nothing;
+  -- handle_new_user trigger creates member/pending profiles automatically; UPDATE to the desired roles/statuses.
+  update public.profiles set role = 'cell_leader', status = 'active',   email = 'cert.031.active_leader@example.test',  full_name = 'Cert Active Leader'   where id = active_leader_id;
+  update public.profiles set role = 'cell_leader', status = 'rejected',  email = 'cert.031.rej_leader@example.test',     full_name = 'Cert Rejected Leader'  where id = rejected_leader_id;
+  update public.profiles set role = 'cell_leader', status = 'inactive',  email = 'cert.031.inact_leader@example.test',   full_name = 'Cert Inactive Leader'  where id = inactive_leader_id;
+  update public.profiles set                       email = 'cert.032.pending_member@example.test',  full_name = 'Cert Pending Member'   where id = pending_member_id;
+  update public.profiles set status = 'active',   email = 'cert.032.active_member@example.test',   full_name = 'Cert Active Member'    where id = active_member_id;
+  update public.profiles set status = 'rejected',  email = 'cert.032.rej_member@example.test',      full_name = 'Cert Rejected Member'  where id = rejected_member_id;
 
   -- Seed: one announcement (inserted as postgres to bypass RLS)
   insert into public.announcements (id, title, body, author_id, author_name, created_at)
@@ -130,8 +128,8 @@ begin
   -- B1: active member CAN insert RSVP
   perform pg_temp.as_auth(active_member_id);
   begin
-    insert into public.event_rsvps (user_id, event_id, rsvp_status)
-    values (active_member_id, event_id_v, 'yes');
+    insert into public.event_rsvps (user_id, event_id)
+    values (active_member_id, event_id_v);
     get diagnostics row_count = row_count;
     if row_count = 1 then
       perform pg_temp.cert_pass('032 event_rsvps', 'active member can insert RSVP', row_count::text);
@@ -147,8 +145,8 @@ begin
   -- B2: pending member CANNOT insert RSVP (the 032 fix)
   perform pg_temp.as_auth(pending_member_id);
   begin
-    insert into public.event_rsvps (user_id, event_id, rsvp_status)
-    values (pending_member_id, event_id_v, 'yes');
+    insert into public.event_rsvps (user_id, event_id)
+    values (pending_member_id, event_id_v);
     perform pg_temp.cert_fail('032 event_rsvps', 'pending member cannot insert RSVP', 'insert succeeded unexpectedly');
   exception when others then
     perform pg_temp.cert_pass('032 event_rsvps', 'pending member cannot insert RSVP', sqlerrm);
@@ -159,8 +157,8 @@ begin
   -- B3: rejected member CANNOT insert RSVP (the 032 fix)
   perform pg_temp.as_auth(rejected_member_id);
   begin
-    insert into public.event_rsvps (user_id, event_id, rsvp_status)
-    values (rejected_member_id, event_id_v, 'yes');
+    insert into public.event_rsvps (user_id, event_id)
+    values (rejected_member_id, event_id_v);
     perform pg_temp.cert_fail('032 event_rsvps', 'rejected member cannot insert RSVP', 'insert succeeded unexpectedly');
   exception when others then
     perform pg_temp.cert_pass('032 event_rsvps', 'rejected member cannot insert RSVP', sqlerrm);
@@ -169,8 +167,8 @@ begin
   delete from public.event_rsvps where user_id = rejected_member_id and event_id = event_id_v;
 
   -- B4: pending member CAN still read their own RSVPs (read policy preserved by 032)
-  insert into public.event_rsvps (user_id, event_id, rsvp_status)
-  values (pending_member_id, event_id_v, 'yes');
+  insert into public.event_rsvps (user_id, event_id)
+  values (pending_member_id, event_id_v);
   perform pg_temp.as_auth(pending_member_id);
   select count(*) into row_count from public.event_rsvps where user_id = pending_member_id and event_id = event_id_v;
   perform pg_temp.as_postgres();
