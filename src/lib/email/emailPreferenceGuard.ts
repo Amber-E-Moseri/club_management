@@ -38,6 +38,26 @@ export const PREFERENCE_COLUMN_BY_TYPE: Readonly<Record<string, keyof EmailPrefe
   account_approved:      'admin_announcements',
 };
 
+// ─── Recipient identity ───────────────────────────────────────────────────────
+
+/** Same rule as the database identity rule normalize_identity_email(): lower(trim(value)). */
+export function normalizeRecipientEmail(value: string | null | undefined): string {
+  return (value ?? '').trim().toLowerCase();
+}
+
+/**
+ * A supplied memberId only vouches for a destination address if that address IS the member's address.
+ * Without this check a caller could pair an eligible member's id (active, opted in) with any other address and
+ * the preference guard would approve a send to a stranger.
+ */
+export function recipientMatchesIdentity(
+  to: string | null | undefined,
+  identityEmail: string | null | undefined,
+): boolean {
+  const destination = normalizeRecipientEmail(to);
+  return destination !== '' && destination === normalizeRecipientEmail(identityEmail);
+}
+
 // ─── Types ────────────────────────────────────────────────────────────────────
 
 /** Shape of a row read from public.email_preferences. */
@@ -76,7 +96,8 @@ export type PreferenceGuardReason =
   | 'opt-out-all'
   | 'type-disabled'
   | 'no-identity'
-  | 'unknown-type';
+  | 'unknown-type'
+  | 'recipient-mismatch';
 
 export type PreferenceGuardResult =
   | { send: true;  reason: 'transactional-exempt' | 'preference-ok' | 'default-preference-ok' }

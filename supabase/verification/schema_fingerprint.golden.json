@@ -63,7 +63,7 @@
         "events_pkey CREATE UNIQUE INDEX events_pkey ON public.events USING btree (id)"
       ],
       "policies": [
-        "events_manage | ALL | {public} | using=is_admin_or_coordinator() | check=is_admin_or_coordinator()",
+        "events_manage | ALL | {public} | using=is_admin_or_coordinator() | check=(is_admin_or_coordinator() AND (created_by = auth.uid()))",
         "events_read | SELECT | {public} | using=is_active_member() | check="
       ],
       "triggers": [],
@@ -156,7 +156,7 @@
       ],
       "policies": [
         "contacts_delete_admin_only | DELETE | {public} | using=is_admin_or_coordinator() | check=",
-        "contacts_insert_scoped | INSERT | {public} | using= | check=(is_admin_or_coordinator() OR is_cell_leader_of(cell_id))",
+        "contacts_insert_scoped | INSERT | {authenticated} | using= | check=((logged_by = auth.uid()) AND (is_admin_or_coordinator() OR is_cell_leader_of(cell_id)))",
         "contacts_read | SELECT | {public} | using=(is_core_admin() OR is_cell_leader_of(cell_id) OR (logged_by = auth.uid())) | check=",
         "contacts_update_scoped | UPDATE | {public} | using=(is_admin_or_coordinator() OR is_cell_leader_of(cell_id)) | check=(is_admin_or_coordinator() OR is_cell_leader_of(cell_id))"
       ],
@@ -407,7 +407,10 @@
         "event_rsvps_pkey CREATE UNIQUE INDEX event_rsvps_pkey ON public.event_rsvps USING btree (event_id, user_id)"
       ],
       "policies": [
-        "event_rsvps_own | ALL | {public} | using=(auth.uid() = user_id) | check=(auth.uid() = user_id)"
+        "event_rsvps_delete_own | DELETE | {public} | using=((auth.uid() = user_id) AND is_active_member()) | check=",
+        "event_rsvps_read_own | SELECT | {public} | using=(auth.uid() = user_id) | check=",
+        "event_rsvps_update_own | UPDATE | {public} | using=((auth.uid() = user_id) AND is_active_member()) | check=((auth.uid() = user_id) AND is_active_member())",
+        "event_rsvps_write_own | INSERT | {public} | using= | check=((auth.uid() = user_id) AND is_active_member())"
       ],
       "triggers": [],
       "force_rls": false,
@@ -607,7 +610,7 @@
         "announcements_pkey CREATE UNIQUE INDEX announcements_pkey ON public.announcements USING btree (id)"
       ],
       "policies": [
-        "announcements_manage | ALL | {public} | using=(is_admin_or_coordinator() OR (EXISTS ( SELECT 1\n   FROM profiles\n  WHERE ((profiles.id = auth.uid()) AND (profiles.role = 'cell_leader'::text))))) | check=(is_admin_or_coordinator() OR (EXISTS ( SELECT 1\n   FROM profiles\n  WHERE ((profiles.id = auth.uid()) AND (profiles.role = 'cell_leader'::text)))))",
+        "announcements_manage | ALL | {public} | using=(is_admin_or_coordinator() OR (EXISTS ( SELECT 1\n   FROM profiles\n  WHERE ((profiles.id = auth.uid()) AND (profiles.role = 'cell_leader'::text) AND (profiles.status = 'active'::text))))) | check=(is_admin_or_coordinator() OR (EXISTS ( SELECT 1\n   FROM profiles\n  WHERE ((profiles.id = auth.uid()) AND (profiles.role = 'cell_leader'::text) AND (profiles.status = 'active'::text)))))",
         "announcements_read | SELECT | {public} | using=is_active_member() | check="
       ],
       "triggers": [],
@@ -1090,13 +1093,16 @@
         "created_at:timestamp with time zone:NOT NULL:now()",
         "html_content:text:NOT NULL:",
         "id:uuid:NOT NULL:gen_random_uuid()",
+        "member_id:uuid:null:",
         "recipient_email:character varying(320):NOT NULL:",
         "scheduled_for:timestamp with time zone:NOT NULL:",
         "sent:boolean:NOT NULL:false",
         "sent_at:timestamp with time zone:null:",
-        "subject:character varying(998):NOT NULL:"
+        "subject:character varying(998):NOT NULL:",
+        "template_type:text:NOT NULL:'generic'::text"
       ],
       "indexes": [
+        "idx_scheduled_emails_member_id CREATE INDEX idx_scheduled_emails_member_id ON public.scheduled_emails USING btree (member_id) WHERE (member_id IS NOT NULL)",
         "idx_scheduled_emails_pending CREATE INDEX idx_scheduled_emails_pending ON public.scheduled_emails USING btree (scheduled_for) WHERE (sent = false)",
         "scheduled_emails_pkey CREATE UNIQUE INDEX scheduled_emails_pkey ON public.scheduled_emails USING btree (id)"
       ],
@@ -1109,6 +1115,7 @@
         "authenticated": ""
       },
       "constraints": [
+        "scheduled_emails_member_id_fkey FOREIGN KEY (member_id) REFERENCES profiles(id) ON DELETE SET NULL",
         "scheduled_emails_pkey PRIMARY KEY (id)"
       ],
       "maintain_acl": 0
@@ -1393,7 +1400,7 @@
       ],
       "policies": [
         "meeting_attendances_delete_own_or_manager | DELETE | {authenticated} | using=(is_active_member() AND ((user_id = auth.uid()) OR has_admin_permission('attendance.view_all'::text) OR (EXISTS ( SELECT 1\n   FROM meetings m\n  WHERE ((m.id = meeting_attendances.meeting_id) AND ((m.created_by = auth.uid()) OR is_cell_leader_of(m.cell_id))))))) | check=",
-        "meeting_attendances_insert_own_visible | INSERT | {authenticated} | using= | check=(is_active_member() AND (user_id = auth.uid()) AND (EXISTS ( SELECT 1\n   FROM meetings m\n  WHERE (m.id = meeting_attendances.meeting_id))))",
+        "meeting_attendances_insert_own_visible | INSERT | {authenticated} | using= | check=(is_active_member() AND (EXISTS ( SELECT 1\n   FROM meetings m\n  WHERE ((m.id = meeting_attendances.meeting_id) AND ((meeting_attendances.user_id = auth.uid()) OR (is_active_profile(meeting_attendances.user_id) AND (is_admin_or_coordinator() OR (m.created_by = auth.uid()) OR is_cell_leader_of(m.cell_id))))))))",
         "meeting_attendances_select_scoped | SELECT | {authenticated} | using=(is_active_member() AND ((user_id = auth.uid()) OR has_admin_permission('attendance.view_all'::text) OR (EXISTS ( SELECT 1\n   FROM meetings m\n  WHERE ((m.id = meeting_attendances.meeting_id) AND ((m.created_by = auth.uid()) OR is_cell_leader_of(m.cell_id))))))) | check=",
         "meeting_attendances_update_manager | UPDATE | {authenticated} | using=(is_active_member() AND (has_admin_permission('attendance.view_all'::text) OR (EXISTS ( SELECT 1\n   FROM meetings m\n  WHERE ((m.id = meeting_attendances.meeting_id) AND ((m.created_by = auth.uid()) OR is_cell_leader_of(m.cell_id))))))) | check=(is_active_member() AND (has_admin_permission('attendance.view_all'::text) OR (EXISTS ( SELECT 1\n   FROM meetings m\n  WHERE ((m.id = meeting_attendances.meeting_id) AND ((m.created_by = auth.uid()) OR is_cell_leader_of(m.cell_id)))))))"
       ],
@@ -1741,8 +1748,11 @@
         "confession_declarations_pkey CREATE UNIQUE INDEX confession_declarations_pkey ON public.confession_declarations USING btree (confession_id, user_id)"
       ],
       "policies": [
-        "confession_declarations_own | ALL | {public} | using=(auth.uid() = user_id) | check=(auth.uid() = user_id)",
-        "confession_declarations_read | SELECT | {public} | using=is_active_member() | check="
+        "confession_declarations_delete_own | DELETE | {public} | using=((auth.uid() = user_id) AND is_active_member()) | check=",
+        "confession_declarations_read | SELECT | {public} | using=is_active_member() | check=",
+        "confession_declarations_read_own | SELECT | {public} | using=(auth.uid() = user_id) | check=",
+        "confession_declarations_update_own | UPDATE | {public} | using=((auth.uid() = user_id) AND is_active_member()) | check=((auth.uid() = user_id) AND is_active_member())",
+        "confession_declarations_write_own | INSERT | {public} | using= | check=((auth.uid() = user_id) AND is_active_member())"
       ],
       "triggers": [],
       "force_rls": false,
@@ -2038,6 +2048,19 @@
       "volatility": "s",
       "definition_md5": "7f7f076ca3c97356023d8b2fdf6673a8"
     },
+    "is_active_profile(uuid)": {
+      "owner": "postgres",
+      "config": "search_path=public, pg_temp",
+      "execute": {
+        "anon": false,
+        "public": false,
+        "service_role": true,
+        "authenticated": true
+      },
+      "security": "definer",
+      "volatility": "s",
+      "definition_md5": "5e20012318656576f8da34e06331971f"
+    },
     "is_cell_leader_of(uuid)": {
       "owner": "postgres",
       "config": "search_path=public, pg_temp",
@@ -2064,6 +2087,19 @@
       "volatility": "s",
       "definition_md5": "06dfefc614f0d53e4b362f5e6810e101"
     },
+    "find_person_by_email(text)": {
+      "owner": "postgres",
+      "config": "search_path=public, pg_temp",
+      "execute": {
+        "anon": false,
+        "public": false,
+        "service_role": true,
+        "authenticated": true
+      },
+      "security": "invoker",
+      "volatility": "s",
+      "definition_md5": "ba2b4d22e3b65dd070199f8a98f6d8ae"
+    },
     "has_admin_permission(text)": {
       "owner": "postgres",
       "config": "search_path=public, pg_temp",
@@ -2088,7 +2124,7 @@
       },
       "security": "definer",
       "volatility": "v",
-      "definition_md5": "0de54f94805d147046c3a35b07992443"
+      "definition_md5": "f7fb4ecfc5587b75ac12ac30d13b0ecb"
     },
     "reject_pending_member(uuid)": {
       "owner": "postgres",
@@ -2205,7 +2241,7 @@
       },
       "security": "invoker",
       "volatility": "v",
-      "definition_md5": "100b812357e8f0b0162bd732324e0653"
+      "definition_md5": "61ac7a9d1794c3f2afb8500461f0608e"
     },
     "bootstrap_first_administrator(text,text)": {
       "owner": "postgres",

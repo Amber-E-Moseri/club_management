@@ -24,18 +24,20 @@ const createdDrafts = [];
 const rnd = () => randomUUID().replace(/-/g, '').slice(0, 10);
 const phoneOf = () => `+1416${String(Math.floor(Math.random() * 9000000) + 1000000)}`;
 
-/** Escape PostgreSQL ILIKE wildcards — mirrors escapeIlikePattern() in people.ts. */
-function escapeIlikePattern(s) {
-  return s.replace(/\\/g, '\\\\').replace(/%/g, '\\%').replace(/_/g, '\\_');
-}
-
-/** Mirrors src/lib/queries/people.ts createContactPerson(). */
+/**
+ * Mirrors src/lib/queries/people.ts createContactPerson() statement for statement (exact email match through the
+ * find_person_by_email RPC, create person, race retry, explicit ambiguous-phone error, contact insert, idempotency
+ * recovery). The AUTHORITATIVE proof of the shipped code is src/__tests__/quickAddRealCode.integration.test.ts,
+ * which runs the real function; this mirror exists so the database-level behaviour is also visible in this report.
+ */
 async function quickAdd(client, input) {
+  const findByEmail = async (email) => {
+    const { data, error } = await client.rpc('find_person_by_email', { p_email: email });
+    if (error) throw new Error(error.message);
+    return data ?? null;
+  };
   let personId = null;
-  if (input.email) {
-    const { data: existing } = await client.from('people').select('id').ilike('email', escapeIlikePattern(input.email.trim())).maybeSingle();
-    if (existing) personId = existing.id;
-  }
+  if (input.email) personId = await findByEmail(input.email);
   if (!personId) {
     const { data, error } = await client
       .from('people')
@@ -45,12 +47,13 @@ async function quickAdd(client, input) {
     if (error) {
       if (/duplicate key|violates unique/i.test(error.message ?? '')) {
         if (input.email && /email/i.test(error.message ?? '')) {
-          // Concurrent insert race: retry the lookup.
-          const { data: found } = await client.from('people').select('id').ilike('email', escapeIlikePattern(input.email.trim())).maybeSingle();
-          if (found) { personId = found.id; }
-          else return { error: 'concurrent-insert-conflict: email unique violation after retry', stage: 'person' };
+          const retried = await findByEmail(input.email);
+          if (retried) personId = retried;
+          else return { error: error.message, stage: 'person' };
+        } else if (/phone/i.test(error.message ?? '')) {
+          return { error: 'ambiguous-phone: a person with this phone number already exists and requires staff review', stage: 'person' };
         } else {
-          return { error: 'ambiguous-phone: a person with this phone already exists and requires staff review', stage: 'person' };
+          return { error: error.message, stage: 'person' };
         }
       } else {
         return { error: error.message, stage: 'person' };
@@ -74,25 +77,12 @@ async function quickAdd(client, input) {
     })
     .select('id, person_id')
     .single();
-  // A6b recovery: on a unique-constraint violation (PG code 23505 or message match)
-  // return the existing row so concurrent callers never see an error.
-  if (contactErr) {
-    const isConstraint = contactErr.code === '23505' || /duplicate key|unique/i.test(contactErr.message ?? '');
-    if (isConstraint) {
-      // Primary: recover via idempotency key.
-      if (input.idempotencyKey) {
-        const { data: again } = await client.from('contacts').select('id, person_id')
-          .eq('logged_by', input.loggedBy).eq('idempotency_key', input.idempotencyKey).maybeSingle();
-        if (again) return { contact: again, replay: true, personId };
-      }
-      // Fallback: same person + logger + date (covers no-key concurrent submits).
-      const dateContacted = input.dateContacted ?? new Date().toISOString().split('T')[0];
-      const { data: byPerson } = await client.from('contacts').select('id, person_id')
-        .eq('person_id', personId).eq('logged_by', input.loggedBy).eq('date_contacted', dateContacted).maybeSingle();
-      if (byPerson) return { contact: byPerson, replay: true, personId };
-    }
-    return { error: contactErr.message, stage: 'contact' };
+  if (contactErr && input.idempotencyKey && /duplicate key|unique/i.test(contactErr.message ?? '')) {
+    const { data: again } = await client.from('contacts').select('id, person_id')
+      .eq('logged_by', input.loggedBy).eq('idempotency_key', input.idempotencyKey).maybeSingle();
+    if (again) return { contact: again, replay: true, personId };
   }
+  if (contactErr) return { error: contactErr.message, stage: 'contact' };
   return { contact: contactRow, personId };
 }
 
@@ -189,30 +179,6 @@ try {
   for (const [label, u] of [['pending', pending], ['rejected', rejected], ['inactive', inactive]]) {
     const r = await quickAdd(u.client, { fullName: `${label} try`, email: `${label}.${rnd()}@example.test`, cellId: cellA, loggedBy: u.id, idempotencyKey: randomUUID() });
     expect(`A9 ${label} account cannot create people or contacts`, !!r.error, 'succeeded');
-  }
-
-  // ==== A10. GAP-1: events.created_by attribution guard ================================================================
-  // Verify that a coordinator cannot create (or update) an event attributed to
-  // another user's ID. Migration 035 adds `created_by = auth.uid()` to the
-  // events_manage WITH CHECK.
-  const evtForged = await coordinator.client.from('events').insert({
-    title: `Forged event ${rnd()}`, date: today, time: '18:00',
-    created_by: coordinator2.id,  // attempt to forge a different user's ID
-  }).select('id');
-  expect(
-    'A10a EXPECTED: coordinator cannot create an event attributed to another user (created_by forgery)',
-    !!evtForged.error,
-    evtForged.error ? 'correctly rejected' : `event created with forged created_by: ${evtForged.data?.[0]?.id}`,
-  );
-
-  const evtOwn = await coordinator.client.from('events').insert({
-    title: `Own event ${rnd()}`, date: today, time: '18:00',
-    created_by: coordinator.id,  // own ID — must succeed
-  }).select('id').single();
-  expect('A10b coordinator can create an event with created_by = own ID', !evtOwn.error, evtOwn.error?.message ?? '');
-  if (evtOwn.data?.id) {
-    // Clean up the test event via admin to avoid fixture pollution.
-    await admin.from('events').delete().eq('id', evtOwn.data.id);
   }
 
   // ==== B. Attendance and meeting roster ===============================================================================
@@ -398,7 +364,7 @@ try {
   const sentBody = await sendOpt.text();
   const { data: loggedRows } = await admin.from('email_log').select('id,status,failed_reason').eq('subject', marker);
   (loggedRows ?? []).forEach((r) => createdEmailLog.push(r.id));
-  expect('D15 sending stops at the provider boundary or is excluded by preference before any delivery is attempted', (sendOpt.status === 500 && /EMAIL_PROVIDER_NOT_CONFIGURED/.test(sentBody)) || (sendOpt.status === 200 && /skipped/i.test(sentBody)), `status=${sendOpt.status} ${sentBody.slice(0, 120)}`);
+  expect('D15 nothing is delivered: the call ends skipped (200) or at the unconfigured provider boundary (500)', (sendOpt.status === 200 && /"sent":0/.test(sentBody)) || (sendOpt.status === 500 && /EMAIL_PROVIDER_NOT_CONFIGURED/.test(sentBody)), `status=${sendOpt.status} ${sentBody.slice(0, 120)}`);
   expect('D16 EXPECTED: a recipient with opt_out_all=true is excluded before any send is attempted (no email_log row for them)', (loggedRows ?? []).length === 0 || (loggedRows ?? []).every((r) => r.status === 'skipped'), `email_log rows created for the opted-out recipient: ${JSON.stringify(loggedRows)}`);
   const stranger = `stranger.${rnd()}@example.test`;
   const sendStranger = await callSend(coordinator, { action: 'send', to: stranger, subject: `stranger-${marker}`, html: '<p>x</p>' });

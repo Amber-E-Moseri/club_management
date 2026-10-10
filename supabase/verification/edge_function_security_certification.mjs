@@ -74,8 +74,9 @@ try {
     // provider boundary and record a 'failed' row — that is still a real dispatch
     // attempt, confirming the auth chain works (pre-fix: auth.getUser rejected the
     // service role key and every dispatch returned 401 silently).
-    const seed = await admin.from('profiles').select('id').limit(1).single();
+    const seed = await admin.from('profiles').select('id,email').eq('status', 'active').limit(1).single();
     const seedMemberId = seed.data?.id ?? null;
+    const seedMemberEmail = seed.data?.email ?? 'x@example.test';
     await admin.from('scheduled_emails').insert({
       recipient_email: `cert.cron.${h.run}@example.test`,
       subject: 'Cert scheduled',
@@ -115,7 +116,8 @@ try {
 
     // Internal dispatch with correct secret reaches provider boundary (not 401)
     const correctInternal = await call('send-email', {
-      body: { action: 'send', to: 'x@example.test', subject: 'x', html: '<p>x</p>', memberId: seedMemberId, templateType: 'generic' },
+      // The destination must be the member's own address (recipient identity rule); an active, opted-in member is eligible.
+      body: { action: 'send', to: seedMemberEmail, subject: 'x', html: '<p>x</p>', memberId: seedMemberId, templateType: 'generic' },
       headers: { 'x-internal-dispatch': cronSecret },
     });
     // Expected: 500 provider-not-configured (proof the auth chain passed)

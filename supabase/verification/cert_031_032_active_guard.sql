@@ -53,13 +53,17 @@ begin
     (rejected_member_id, 'cert.032.rej_member@example.test',      'authenticated', 'authenticated', '{"full_name":"Cert Rejected Member"}', now(), now(), '', now())
   on conflict do nothing;
 
-  -- handle_new_user trigger creates member/pending profiles automatically; UPDATE to the desired roles/statuses.
-  update public.profiles set role = 'cell_leader', status = 'active',   email = 'cert.031.active_leader@example.test',  full_name = 'Cert Active Leader'   where id = active_leader_id;
-  update public.profiles set role = 'cell_leader', status = 'rejected',  email = 'cert.031.rej_leader@example.test',     full_name = 'Cert Rejected Leader'  where id = rejected_leader_id;
-  update public.profiles set role = 'cell_leader', status = 'inactive',  email = 'cert.031.inact_leader@example.test',   full_name = 'Cert Inactive Leader'  where id = inactive_leader_id;
-  update public.profiles set                       email = 'cert.032.pending_member@example.test',  full_name = 'Cert Pending Member'   where id = pending_member_id;
-  update public.profiles set status = 'active',   email = 'cert.032.active_member@example.test',   full_name = 'Cert Active Member'    where id = active_member_id;
-  update public.profiles set status = 'rejected',  email = 'cert.032.rej_member@example.test',      full_name = 'Cert Rejected Member'  where id = rejected_member_id;
+  insert into public.profiles (id, email, full_name, role, status)
+  values
+    (active_leader_id,   'cert.031.active_leader@example.test',   'Cert Active Leader',   'cell_leader',  'active'),
+    (rejected_leader_id, 'cert.031.rej_leader@example.test',      'Cert Rejected Leader', 'cell_leader',  'rejected'),
+    (inactive_leader_id, 'cert.031.inact_leader@example.test',    'Cert Inactive Leader', 'cell_leader',  'inactive'),
+    (pending_member_id,  'cert.032.pending_member@example.test',  'Cert Pending Member',  'member',       'pending'),
+    (active_member_id,   'cert.032.active_member@example.test',   'Cert Active Member',   'member',       'active'),
+    (rejected_member_id, 'cert.032.rej_member@example.test',      'Cert Rejected Member', 'member',       'rejected')
+  -- The signup trigger already created each profile as 'pending'; DO NOTHING would silently keep that and make
+  -- every 'active' fixture pending. Force the intended role/status so positive and negative checks mean something.
+  on conflict (id) do update set email = excluded.email, full_name = excluded.full_name, role = excluded.role, status = excluded.status;
 
   -- Seed: one announcement (inserted as postgres to bypass RLS)
   insert into public.announcements (id, title, body, author_id, author_name, created_at)

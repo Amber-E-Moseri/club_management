@@ -51,7 +51,6 @@ function makeChain(returnData: unknown, returnError: unknown = null) {
   q.insert = jest.fn(() => q);
   q.select = jest.fn(() => q);
   q.eq = jest.fn(() => q);
-  q.ilike = jest.fn(() => q);
   q.update = jest.fn(() => q);
   q.order = jest.fn(() => q);
   q.maybeSingle = jest.fn(() => Promise.resolve({ data: returnData, error: returnError }));
@@ -146,8 +145,8 @@ test('T-5: createContactPerson returns existing person when email already exists
     notes: null, logged_by: ACTOR_ID, archived: false, is_member: false, member_id: null,
   };
 
+  (supabase.rpc as jest.Mock).mockResolvedValueOnce({ data: existingPersonId.id, error: null }); // exact email match → found
   (supabase.from as jest.Mock)
-    .mockReturnValueOnce(makeChain(existingPersonId)) // duplicate email check → found
     .mockReturnValueOnce(makeChain(personRow))         // fetch person row
     .mockReturnValueOnce(makeChain(contactRow));        // insert contact
 
@@ -334,8 +333,8 @@ test('T-14: createContactPerson produces contact.person_id = person.id', async (
     notes: 'Met at service', logged_by: ACTOR_ID, archived: false, is_member: false, member_id: null,
   };
 
+  (supabase.rpc as jest.Mock).mockResolvedValueOnce({ data: noExisting, error: null }); // exact email match → none
   (supabase.from as jest.Mock)
-    .mockReturnValueOnce(makeChain(noExisting)) // email duplicate check
     .mockReturnValueOnce(makeChain(personRow))  // insert person
     .mockReturnValueOnce(makeChain(personRow))  // fetch person
     .mockReturnValueOnce(makeChain(contactRow)); // insert contact
@@ -487,103 +486,6 @@ test('T-21: merge authorization is enforced by the database function', () => {
   expect(migration).toContain('NOT public.is_admin_or_coordinator()');
   expect(migration).toContain("RAISE EXCEPTION 'Not authorised to merge people.'");
   expect(migration).toContain('GRANT EXECUTE ON FUNCTION public.merge_people');
-});
-
-// ─── T-23 – T-26: .ilike() wildcard safety ───────────────────────────────────
-
-test('T-23: mixed-case email is matched case-insensitively via ilike', async () => {
-  const existingPersonId = { id: PERSON_ID };
-  const personRow = { id: PERSON_ID, full_name: 'Alice', email: 'alice@example.com', phone: null, created_at: '2026-01-01', updated_at: '2026-01-01' };
-  const contactRow = {
-    id: CONTACT_ID, person_id: PERSON_ID, cell_id: 'cell-1', tag: null,
-    follow_up_status: null, follow_up_assignee: null, date_contacted: '2026-09-15',
-    notes: null, logged_by: ACTOR_ID, archived: false, is_member: false, member_id: null,
-  };
-
-  const emailLookupChain = makeChain(existingPersonId);
-  (supabase.from as jest.Mock)
-    .mockReturnValueOnce(emailLookupChain)      // duplicate email check → found
-    .mockReturnValueOnce(makeChain(personRow))   // fetch person row
-    .mockReturnValueOnce(makeChain(contactRow)); // insert contact
-
-  const { person } = await createContactPerson({
-    fullName: 'Alice Repeat',
-    email: 'ALICE@Example.com',
-    cellId: 'cell-1',
-    loggedBy: ACTOR_ID,
-  });
-
-  expect(person.id).toBe(PERSON_ID);
-  // ilike must be called with the trimmed (but still mixed-case) value — no wildcards present
-  expect(emailLookupChain.ilike).toHaveBeenCalledWith('email', 'ALICE@Example.com');
-});
-
-test('T-24: underscore in email is escaped to prevent single-character wildcard matching', async () => {
-  const noExisting = null;
-  const personRow = { id: PERSON_ID, full_name: 'User', email: 'user_2@test.com', phone: null, created_at: '2026-01-01', updated_at: '2026-01-01' };
-  const contactRow = {
-    id: CONTACT_ID, person_id: PERSON_ID, cell_id: 'cell-1', tag: null,
-    follow_up_status: null, follow_up_assignee: null, date_contacted: '2026-09-15',
-    notes: null, logged_by: ACTOR_ID, archived: false, is_member: false, member_id: null,
-  };
-
-  const emailLookupChain = makeChain(noExisting);
-  (supabase.from as jest.Mock)
-    .mockReturnValueOnce(emailLookupChain)       // duplicate check → not found
-    .mockReturnValueOnce(makeChain(personRow))    // insert person
-    .mockReturnValueOnce(makeChain(personRow))    // fetch person
-    .mockReturnValueOnce(makeChain(contactRow));  // insert contact
-
-  await createContactPerson({ fullName: 'User', email: 'user_2@test.com', cellId: 'cell-1', loggedBy: ACTOR_ID });
-
-  // Underscore must be escaped: 'user_2@test.com' → 'user\_2@test.com'
-  expect(emailLookupChain.ilike).toHaveBeenCalledWith('email', 'user\\_2@test.com');
-});
-
-test('T-25: percent in email is escaped to prevent multi-character wildcard matching', async () => {
-  const noExisting = null;
-  const personRow = { id: PERSON_ID, full_name: 'User', email: 'user%test@example.com', phone: null, created_at: '2026-01-01', updated_at: '2026-01-01' };
-  const contactRow = {
-    id: CONTACT_ID, person_id: PERSON_ID, cell_id: 'cell-1', tag: null,
-    follow_up_status: null, follow_up_assignee: null, date_contacted: '2026-09-15',
-    notes: null, logged_by: ACTOR_ID, archived: false, is_member: false, member_id: null,
-  };
-
-  const emailLookupChain = makeChain(noExisting);
-  (supabase.from as jest.Mock)
-    .mockReturnValueOnce(emailLookupChain)
-    .mockReturnValueOnce(makeChain(personRow))
-    .mockReturnValueOnce(makeChain(personRow))
-    .mockReturnValueOnce(makeChain(contactRow));
-
-  await createContactPerson({ fullName: 'User', email: 'user%test@example.com', cellId: 'cell-1', loggedBy: ACTOR_ID });
-
-  // Percent must be escaped: 'user%test@example.com' → 'user\%test@example.com'
-  expect(emailLookupChain.ilike).toHaveBeenCalledWith('email', 'user\\%test@example.com');
-});
-
-test('T-26: backslash in email is escaped to prevent ILIKE escape-character injection', async () => {
-  const noExisting = null;
-  // 'user\\test@example.com' in JS source = actual string: user\test@example.com
-  const personRow = { id: PERSON_ID, full_name: 'User', email: 'user\\test@example.com', phone: null, created_at: '2026-01-01', updated_at: '2026-01-01' };
-  const contactRow = {
-    id: CONTACT_ID, person_id: PERSON_ID, cell_id: 'cell-1', tag: null,
-    follow_up_status: null, follow_up_assignee: null, date_contacted: '2026-09-15',
-    notes: null, logged_by: ACTOR_ID, archived: false, is_member: false, member_id: null,
-  };
-
-  const emailLookupChain = makeChain(noExisting);
-  (supabase.from as jest.Mock)
-    .mockReturnValueOnce(emailLookupChain)
-    .mockReturnValueOnce(makeChain(personRow))
-    .mockReturnValueOnce(makeChain(personRow))
-    .mockReturnValueOnce(makeChain(contactRow));
-
-  // Input actual string: user\test@example.com
-  await createContactPerson({ fullName: 'User', email: 'user\\test@example.com', cellId: 'cell-1', loggedBy: ACTOR_ID });
-
-  // Backslash must be escaped first: user\test → user\\test (actual), or 'user\\\\test@example.com' in JS source
-  expect(emailLookupChain.ilike).toHaveBeenCalledWith('email', 'user\\\\test@example.com');
 });
 
 test('T-22: manual merge preserves outreach and membership history by repointing relationships', () => {

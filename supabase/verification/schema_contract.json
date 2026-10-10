@@ -57,6 +57,8 @@
     "is_devotional_admin()": { "security": "invoker", "execute": ["authenticated"] },
     "normalize_identity_email(text)": { "security": "invoker", "execute": ["authenticated", "service_role"] },
     "normalize_identity_phone(text)": { "security": "invoker", "execute": ["authenticated", "service_role"] },
+    "is_active_profile(uuid)": { "security": "definer", "execute": ["authenticated", "service_role"] },
+    "find_person_by_email(text)": { "security": "invoker", "execute": ["authenticated", "service_role"] },
     "profile_edit_changed_fields(jsonb,jsonb,text[])": { "security": "invoker", "execute": ["authenticated", "service_role"] },
     "redacted_profile_changes(jsonb,jsonb,text[])": { "security": "invoker", "execute": ["authenticated", "service_role"] },
     "track_email_open(uuid,uuid)": { "security": "definer", "execute": ["service_role"] },

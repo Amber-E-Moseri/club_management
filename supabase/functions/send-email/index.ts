@@ -2,6 +2,7 @@ import { createClient } from 'https://esm.sh/@supabase/supabase-js@2.45.0';
 import {
   evaluatePreference,
   TRANSACTIONAL_TYPES,
+  recipientMatchesIdentity,
   type EmailPreferenceRow,
 } from '../_shared/email-preference-guard.ts';
 
@@ -85,7 +86,7 @@ Deno.serve(async (req) => {
 
       // Re-check preferences at resend time — the member may have opted out
       // since the original send attempt.
-      const guardResult = await checkEmailPreference(log.member_id, log.template_type);
+      const guardResult = await checkEmailPreference(log.member_id, log.template_type, log.recipient_email);
       if (!guardResult.send) {
         await supabase.from('email_log').update({
           status: 'skipped',
@@ -233,9 +234,17 @@ async function requireAuthorizedCaller(req: Request, permission: string): Promis
 async function checkEmailPreference(
   memberId: string | null | undefined,
   templateType: string,
+  to: string,
 ): Promise<{ send: true; reason: string } | { send: false; reason: string }> {
-  // Transactional emails bypass the DB query entirely.
+  // Transactional emails skip preference checks. When they name a member, the destination address must still
+  // be that member's address; with no memberId they are staff-initiated and remain permitted.
   if (TRANSACTIONAL_TYPES.has(templateType)) {
+    if (memberId) {
+      const { data: owner } = await supabase.from('profiles').select('email').eq('id', memberId).maybeSingle();
+      if (!owner || !recipientMatchesIdentity(to, owner.email)) {
+        return { send: false, reason: 'recipient-mismatch' };
+      }
+    }
     return { send: true, reason: 'transactional-exempt' };
   }
 
@@ -247,11 +256,15 @@ async function checkEmailPreference(
   // Only active members are eligible recipients.
   const { data: profile } = await supabase
     .from('profiles')
-    .select('status')
+    .select('status, email')
     .eq('id', memberId)
     .maybeSingle();
   if (!profile || profile.status !== 'active') {
     return { send: false, reason: 'non-active-member' };
+  }
+  // The destination must be this member's own address - a valid memberId cannot vouch for a different address.
+  if (!recipientMatchesIdentity(to, profile.email)) {
+    return { send: false, reason: 'recipient-mismatch' };
   }
 
   // Fetch the member's preference row.
@@ -289,12 +302,16 @@ async function sendAndLog(input: {
 }): Promise<SendAndLogResult> {
   // Enforce preferences BEFORE writing any log row.  This keeps the log clean:
   // a skipped row documents the skip; an aborted check never logs at all.
-  const guardResult = await checkEmailPreference(input.memberId, input.templateType);
+  const guardResult = await checkEmailPreference(input.memberId, input.templateType, input.to);
 
   if (!guardResult.send) {
     // Unknown address (no identity) or non-active member: skip silently — there
     // is no legitimate account to audit against, so no log row is written.
-    if (guardResult.reason === 'no-identity' || guardResult.reason === 'non-active-member') {
+    if (
+      guardResult.reason === 'no-identity' ||
+      guardResult.reason === 'non-active-member' ||
+      guardResult.reason === 'recipient-mismatch'
+    ) {
       return { skipped: true, reason: guardResult.reason, logId: undefined };
     }
     // All other skip reasons (opt-out, preference): write a skipped log row so

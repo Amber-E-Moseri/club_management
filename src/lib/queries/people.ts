@@ -5,12 +5,20 @@ import type {
   CreatePersonInput,
 } from '../../types/person';
 
-// ─── Internal helpers ─────────────────────────────────────────────────────────
+// ─── Email identity matching ──────────────────────────────────────────────────
 
-// Escape PostgreSQL ILIKE wildcards so a user-supplied string matches literally.
-// Without this, an email like "a%b@c.com" or "a_b@c.com" would match unintended rows.
-function escapeIlikePattern(s: string): string {
-  return s.replace(/\\/g, '\\\\').replace(/%/g, '\\%').replace(/_/g, '\\_');
+/**
+ * Finds the person whose email equals `email` under the database identity rule
+ * normalize_identity_email() = lower(trim(email)).
+ *
+ * This is an exact comparison performed in the database (RPC find_person_by_email, migration 037). It
+ * deliberately does NOT use .ilike(): LIKE/ILIKE treat `_` and `%` as wildcards (and PostgREST also maps `*`),
+ * so "john_smith@x.org" would match "johnXsmith@x.org" and silently merge two different people.
+ */
+export async function findPersonIdByEmail(email: string): Promise<string | null> {
+  const { data, error } = await supabase.rpc('find_person_by_email', { p_email: email });
+  if (error) throw new Error(error.message);
+  return (data as string | null) ?? null;
 }
 
 // ─── Person creation ──────────────────────────────────────────────────────────
@@ -55,12 +63,7 @@ export async function createContactPerson(input: {
   // matches are ambiguous and must be resolved by explicit staff review.
   let personId: string | null = null;
   if (input.email) {
-    const { data: existing } = await supabase
-      .from('people')
-      .select('id')
-      .ilike('email', escapeIlikePattern(input.email.trim()))
-      .maybeSingle();
-    if (existing) personId = existing.id as string;
+    personId = await findPersonIdByEmail(input.email);
   }
 
   // Create person if not found
@@ -78,13 +81,9 @@ export async function createContactPerson(input: {
         if (input.email && /email/i.test(msg)) {
           // Concurrent insert race: another request just created this person —
           // retry the lookup so both callers share the same person record.
-          const { data: retried } = await supabase
-            .from('people')
-            .select('id')
-            .ilike('email', escapeIlikePattern(input.email.trim()))
-            .maybeSingle();
+          const retried = await findPersonIdByEmail(input.email);
           if (retried) {
-            personId = retried.id as string;
+            personId = retried;
           } else {
             throw err;
           }
