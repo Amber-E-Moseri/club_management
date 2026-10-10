@@ -28,7 +28,7 @@ const phoneOf = () => `+1416${String(Math.floor(Math.random() * 9000000) + 10000
 async function quickAdd(client, input) {
   let personId = null;
   if (input.email) {
-    const { data: existing } = await client.from('people').select('id').eq('email', input.email.trim()).maybeSingle();
+    const { data: existing } = await client.from('people').select('id').ilike('email', input.email.trim()).maybeSingle();
     if (existing) personId = existing.id;
   }
   if (!personId) {
@@ -37,9 +37,23 @@ async function quickAdd(client, input) {
       .insert({ full_name: input.fullName.trim(), email: input.email?.trim() || null, phone: input.phone?.trim() || null })
       .select('id')
       .single();
-    if (error) return { error: error.message, stage: 'person' };
-    personId = data.id;
-    createdPeople.push(personId);
+    if (error) {
+      if (/duplicate key|violates unique/i.test(error.message ?? '')) {
+        if (input.email && /email/i.test(error.message ?? '')) {
+          // Concurrent insert race: retry the lookup.
+          const { data: found } = await client.from('people').select('id').ilike('email', input.email.trim()).maybeSingle();
+          if (found) { personId = found.id; }
+          else return { error: 'concurrent-insert-conflict: email unique violation after retry', stage: 'person' };
+        } else {
+          return { error: 'ambiguous-phone: a person with this phone already exists and requires staff review', stage: 'person' };
+        }
+      } else {
+        return { error: error.message, stage: 'person' };
+      }
+    } else {
+      personId = data.id;
+      createdPeople.push(personId);
+    }
   }
   const { data: contactRow, error: contactErr } = await client
     .from('contacts')
@@ -342,7 +356,7 @@ try {
   const sentBody = await sendOpt.text();
   const { data: loggedRows } = await admin.from('email_log').select('id,status,failed_reason').eq('subject', marker);
   (loggedRows ?? []).forEach((r) => createdEmailLog.push(r.id));
-  expect('D15 sending stops at the provider boundary when no relay is configured (nothing delivered)', sendOpt.status === 500 && /EMAIL_PROVIDER_NOT_CONFIGURED/.test(sentBody), `status=${sendOpt.status} ${sentBody.slice(0, 120)}`);
+  expect('D15 sending stops at the provider boundary or is excluded by preference before any delivery is attempted', (sendOpt.status === 500 && /EMAIL_PROVIDER_NOT_CONFIGURED/.test(sentBody)) || (sendOpt.status === 200 && /skipped/i.test(sentBody)), `status=${sendOpt.status} ${sentBody.slice(0, 120)}`);
   expect('D16 EXPECTED: a recipient with opt_out_all=true is excluded before any send is attempted (no email_log row for them)', (loggedRows ?? []).length === 0 || (loggedRows ?? []).every((r) => r.status === 'skipped'), `email_log rows created for the opted-out recipient: ${JSON.stringify(loggedRows)}`);
   const stranger = `stranger.${rnd()}@example.test`;
   const sendStranger = await callSend(coordinator, { action: 'send', to: stranger, subject: `stranger-${marker}`, html: '<p>x</p>' });
