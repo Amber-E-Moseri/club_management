@@ -187,6 +187,58 @@ begin
   if visible = 1 then perform pg_temp.cert_pass('Approval', 'a rejected coordinator loses administrative power (sees only itself)', visible::text);
   else perform pg_temp.cert_fail('Approval', 'a rejected coordinator loses administrative power (sees only itself)', visible::text); end if;
 
+  -- ===== F-1: REJECTED CELL LEADER CANNOT MANAGE ANNOUNCEMENTS ============================================================
+  -- Migration 031 adds AND status = 'active' to announcements_manage.  Before the fix, any cell_leader (even
+  -- status='rejected') could INSERT/UPDATE/DELETE announcements.  This block proves the fix is effective.
+  update public.profiles set role = 'cell_leader' where id = rejected_id;
+
+  -- Postgres inserts an existing announcement so UPDATE/DELETE have a target row.
+  insert into public.announcements (title, body, author_id, author_name)
+    values ('Cert F-1 Ann', 'cert body', coord_id, 'Cert Coord');
+
+  -- INSERT denial: WITH CHECK violation → exception expected.
+  perform pg_temp.as_auth(rejected_id);
+  begin
+    insert into public.announcements (title, body, author_id, author_name)
+      values ('Cert Rogue Insert', 'cert body', rejected_id, 'Cert Rejected CL');
+    perform pg_temp.as_postgres();
+    perform pg_temp.cert_fail('Announcements', 'rejected cell leader cannot insert announcement (F-1)', 'insert succeeded');
+  exception when others then
+    perform pg_temp.as_postgres();
+    perform pg_temp.cert_pass('Announcements', 'rejected cell leader cannot insert announcement (F-1)', sqlerrm);
+  end;
+
+  -- UPDATE denial: USING check returns false → 0 rows touched, no exception.
+  perform pg_temp.as_auth(rejected_id);
+  update public.announcements set body = 'Cert Rogue Update' where title = 'Cert F-1 Ann';
+  get diagnostics visible = row_count;
+  perform pg_temp.as_postgres();
+  if visible = 0 then perform pg_temp.cert_pass('Announcements', 'rejected cell leader update returns 0 rows (F-1)', visible::text);
+  else perform pg_temp.cert_fail('Announcements', 'rejected cell leader update returns 0 rows (F-1)', visible::text); end if;
+
+  -- DELETE denial: USING check returns false → 0 rows touched, no exception.
+  perform pg_temp.as_auth(rejected_id);
+  delete from public.announcements where title = 'Cert F-1 Ann';
+  get diagnostics visible = row_count;
+  perform pg_temp.as_postgres();
+  if visible = 0 then perform pg_temp.cert_pass('Announcements', 'rejected cell leader delete returns 0 rows (F-1)', visible::text);
+  else perform pg_temp.cert_fail('Announcements', 'rejected cell leader delete returns 0 rows (F-1)', visible::text); end if;
+
+  -- Regression: active cell leader must still be able to insert announcements.
+  perform pg_temp.as_auth(leader_id);
+  begin
+    insert into public.announcements (title, body, author_id, author_name)
+      values ('Cert Active Insert', 'cert body', leader_id, 'Cert Leader');
+    perform pg_temp.as_postgres();
+    perform pg_temp.cert_pass('Announcements', 'active cell leader can still insert announcement (F-1 regression)', 'insert succeeded');
+  exception when others then
+    perform pg_temp.as_postgres();
+    perform pg_temp.cert_fail('Announcements', 'active cell leader can still insert announcement (F-1 regression)', sqlerrm);
+  end;
+
+  -- Restore rejected_id role to member for remaining tests.
+  update public.profiles set role = 'member' where id = rejected_id;
+
   -- ===== FIRST-ADMINISTRATOR BOOTSTRAP ====================================================================================
   -- (an active coordinator already exists in this fixture, so remove the roles to simulate a clean project)
   update public.profiles set role = 'member', status = 'active' where id in (admin_id, coord_id, leader_id);

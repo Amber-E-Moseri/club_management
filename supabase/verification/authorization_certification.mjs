@@ -140,6 +140,29 @@ try {
   expect('a pending account sees at most its own entry in the member directory', (pendingDirectory.data ?? []).every((r) => r.id === pending.id), `${(pendingDirectory.data ?? []).length} rows`);
   const ownProfile = await pending.client.from('profiles').select('id,status').eq('id', pending.id).maybeSingle();
   expect('a pending account can read its own profile (the approval screen needs it)', ownProfile.data?.status === 'pending', ownProfile.error?.message);
+
+  // ---- F-4: pending account profile-edit behavioural contract --------------------------------------------------------
+  // full_name is an ordinary column; the guard trigger does not block it and the RLS UPDATE policy should
+  // allow a pending account to correct a typo before they are approved.
+  const pendingNameBefore = (await admin.from('profiles').select('full_name').eq('id', pending.id).single()).data?.full_name;
+  await pending.client.from('profiles').update({ full_name: 'F-4 Updated Name' }).eq('id', pending.id);
+  const pendingNameAfter = (await admin.from('profiles').select('full_name').eq('id', pending.id).single()).data?.full_name;
+  expect('F-4: pending account can update own full_name', pendingNameAfter === 'F-4 Updated Name', `before="${pendingNameBefore}" after="${pendingNameAfter}"`);
+
+  // cell_id is a cell-assignment column; a pending account must not self-assign to bypass the approval workflow.
+  const pendingCellBefore = (await admin.from('profiles').select('cell_id').eq('id', pending.id).single()).data?.cell_id ?? null;
+  const anyCellRow = await admin.from('cells').select('id').limit(1).single();
+  if (anyCellRow.data?.id) {
+    await pending.client.from('profiles').update({ cell_id: anyCellRow.data.id }).eq('id', pending.id);
+    const pendingCellAfter = (await admin.from('profiles').select('cell_id').eq('id', pending.id).single()).data?.cell_id ?? null;
+    expect('F-4: pending account cannot self-assign a cell', pendingCellAfter === pendingCellBefore, `before="${pendingCellBefore}" after="${pendingCellAfter}"`);
+  }
+
+  // role, status and admin_role are already proven immovable in the self-promotion block above.
+  // Summarise the result here so the F-4 family appears together in the cert report.
+  const pendingProfileFinal = await h.profileOf(pending.id);
+  expect('F-4: pending account role/status/admin_role unchanged throughout', pendingProfileFinal.role === 'member' && pendingProfileFinal.status === 'pending' && pendingProfileFinal.admin_role == null, JSON.stringify(pendingProfileFinal));
+
   await admin.from('people').delete().eq('id', seeded.data.id);
 } catch (error) {
   h.fail('harness completed without error', error.message);

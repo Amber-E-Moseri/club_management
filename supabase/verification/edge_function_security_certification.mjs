@@ -44,7 +44,10 @@ try {
   await admin.from('profiles').update({ status: 'rejected' }).eq('id', rejected.id);
   await grantNotificationPermission(custom.id);
 
-  const send = { action: 'send', to: 'nobody@example.test', subject: 'Cert', html: '<p>Cert</p>' };
+  // Use a transactional template type so preference enforcement is bypassed and the
+  // call reaches the provider boundary (EMAIL_PROVIDER_NOT_CONFIGURED → 500).
+  // Without templateType the preference guard short-circuits at no-identity → 200 skipped.
+  const send = { action: 'send', to: 'nobody@example.test', subject: 'Cert', html: '<p>Cert</p>', templateType: 'account_approved' };
   const providerBoundary = (r) => r.status === 500 && /EMAIL_PROVIDER_NOT_CONFIGURED/.test(r.json?.error ?? '');
 
   expect('send-email anonymous denied', (await call('send-email', { body: send })).status === 401);
@@ -66,8 +69,61 @@ try {
   if (!cronSecret || !unsubscribeSecret) {
     h.fail('positive-path secrets provided', 'CERT_CRON_SECRET and CERT_UNSUBSCRIBE_SECRET are required');
   } else {
+    // Seed a real scheduled email so the cron processor has something to dispatch.
+    // The relay is not configured on the local stack; 'send' will stop at the
+    // provider boundary and record a 'failed' row — that is still a real dispatch
+    // attempt, confirming the auth chain works (pre-fix: auth.getUser rejected the
+    // service role key and every dispatch returned 401 silently).
+    const seed = await admin.from('profiles').select('id').limit(1).single();
+    const seedMemberId = seed.data?.id ?? null;
+    await admin.from('scheduled_emails').insert({
+      recipient_email: `cert.cron.${h.run}@example.test`,
+      subject: 'Cert scheduled',
+      html_content: '<p>cert</p>',
+      scheduled_for: new Date(Date.now() - 1000).toISOString(), // 1 s in the past
+      sent: false,
+      member_id: seedMemberId,
+      template_type: 'generic',
+    });
+
     const cron = await call('process-scheduled-emails', { body: {}, headers: { ...gate, 'x-cron-secret': cronSecret } });
-    expect('process-scheduled-emails correct secret reaches execution', cron.status === 200 && typeof cron.json?.processed === 'number', `HTTP ${cron.status}`);
+    // Core assertion: HTTP 200, processed ≥ 1, and sent + skipped + failed === processed.
+    // A non-zero failed count is expected here because the relay is not configured;
+    // the important invariant is that failed > 0 OR skipped > 0 (not that sent = 0),
+    // proving the auth chain reached send-email instead of dying at the 401 boundary.
+    const cronOk = (
+      cron.status === 200 &&
+      typeof cron.json?.processed === 'number' &&
+      typeof cron.json?.sent === 'number' &&
+      typeof cron.json?.skipped === 'number' &&
+      typeof cron.json?.failed === 'number' &&
+      cron.json.processed >= 1 &&
+      cron.json.sent + cron.json.skipped + cron.json.failed === cron.json.processed
+    );
+    expect(
+      'process-scheduled-emails dispatches scheduled emails (auth chain intact)',
+      cronOk,
+      `HTTP ${cron.status} body=${JSON.stringify(cron.json)}`,
+    );
+
+    // Additional denial: x-internal-dispatch with wrong secret is refused
+    const wrongInternal = await call('send-email', {
+      body: { action: 'send', to: 'x@example.test', subject: 'x', html: '<p>x</p>' },
+      headers: { 'x-internal-dispatch': 'wrong-internal-secret' },
+    });
+    expect('send-email wrong internal dispatch secret denied', wrongInternal.status === 401, `HTTP ${wrongInternal.status}`);
+
+    // Internal dispatch with correct secret reaches provider boundary (not 401)
+    const correctInternal = await call('send-email', {
+      body: { action: 'send', to: 'x@example.test', subject: 'x', html: '<p>x</p>', memberId: seedMemberId, templateType: 'generic' },
+      headers: { 'x-internal-dispatch': cronSecret },
+    });
+    // Expected: 500 provider-not-configured (proof the auth chain passed)
+    expect(
+      'send-email correct internal dispatch reaches provider boundary (auth chain works)',
+      correctInternal.status === 500 && /EMAIL_PROVIDER_NOT_CONFIGURED/.test(correctInternal.json?.error ?? ''),
+      `HTTP ${correctInternal.status} body=${JSON.stringify(correctInternal.json)}`,
+    );
 
     const sign = (payload, secret) => {
       const encoded = Buffer.from(JSON.stringify(payload)).toString('base64url');
