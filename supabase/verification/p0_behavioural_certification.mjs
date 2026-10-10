@@ -69,12 +69,25 @@ async function quickAdd(client, input) {
     })
     .select('id, person_id')
     .single();
-  if (contactErr && input.idempotencyKey && /duplicate key|unique/i.test(contactErr.message ?? '')) {
-    const { data: again } = await client.from('contacts').select('id, person_id')
-      .eq('logged_by', input.loggedBy).eq('idempotency_key', input.idempotencyKey).maybeSingle();
-    if (again) return { contact: again, replay: true, personId };
+  // A6b recovery: on a unique-constraint violation (PG code 23505 or message match)
+  // return the existing row so concurrent callers never see an error.
+  if (contactErr) {
+    const isConstraint = contactErr.code === '23505' || /duplicate key|unique/i.test(contactErr.message ?? '');
+    if (isConstraint) {
+      // Primary: recover via idempotency key.
+      if (input.idempotencyKey) {
+        const { data: again } = await client.from('contacts').select('id, person_id')
+          .eq('logged_by', input.loggedBy).eq('idempotency_key', input.idempotencyKey).maybeSingle();
+        if (again) return { contact: again, replay: true, personId };
+      }
+      // Fallback: same person + logger + date (covers no-key concurrent submits).
+      const dateContacted = input.dateContacted ?? new Date().toISOString().split('T')[0];
+      const { data: byPerson } = await client.from('contacts').select('id, person_id')
+        .eq('person_id', personId).eq('logged_by', input.loggedBy).eq('date_contacted', dateContacted).maybeSingle();
+      if (byPerson) return { contact: byPerson, replay: true, personId };
+    }
+    return { error: contactErr.message, stage: 'contact' };
   }
-  if (contactErr) return { error: contactErr.message, stage: 'contact' };
   return { contact: contactRow, personId };
 }
 
@@ -171,6 +184,30 @@ try {
   for (const [label, u] of [['pending', pending], ['rejected', rejected], ['inactive', inactive]]) {
     const r = await quickAdd(u.client, { fullName: `${label} try`, email: `${label}.${rnd()}@example.test`, cellId: cellA, loggedBy: u.id, idempotencyKey: randomUUID() });
     expect(`A9 ${label} account cannot create people or contacts`, !!r.error, 'succeeded');
+  }
+
+  // ==== A10. GAP-1: events.created_by attribution guard ================================================================
+  // Verify that a coordinator cannot create (or update) an event attributed to
+  // another user's ID. Migration 035 adds `created_by = auth.uid()` to the
+  // events_manage WITH CHECK.
+  const evtForged = await coordinator.client.from('events').insert({
+    title: `Forged event ${rnd()}`, date: today, time: '18:00', visibility: 'public',
+    created_by: coordinator2.id,  // attempt to forge a different user's ID
+  }).select('id');
+  expect(
+    'A10a EXPECTED: coordinator cannot create an event attributed to another user (created_by forgery)',
+    !!evtForged.error,
+    evtForged.error ? 'correctly rejected' : `event created with forged created_by: ${evtForged.data?.[0]?.id}`,
+  );
+
+  const evtOwn = await coordinator.client.from('events').insert({
+    title: `Own event ${rnd()}`, date: today, time: '18:00', visibility: 'public',
+    created_by: coordinator.id,  // own ID — must succeed
+  }).select('id').single();
+  expect('A10b coordinator can create an event with created_by = own ID', !evtOwn.error, evtOwn.error?.message ?? '');
+  if (evtOwn.data?.id) {
+    // Clean up the test event via admin to avoid fixture pollution.
+    await admin.from('events').delete().eq('id', evtOwn.data.id);
   }
 
   // ==== B. Attendance and meeting roster ===============================================================================

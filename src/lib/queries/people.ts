@@ -122,26 +122,60 @@ export async function createContactPerson(input: {
     )
     .single();
 
-  if (contactErr && input.idempotencyKey && /duplicate key|unique/i.test(contactErr.message ?? '')) {
-    const { data: existingContact, error: existingErr } = await supabase
-      .from('contacts')
-      .select(
+  // A6b: On a unique-constraint violation (PostgreSQL code 23505), recover by
+  // returning the existing contacts row rather than surfacing a raw DB error.
+  // We check both the PG error code and a message regex so the guard is robust
+  // regardless of how Supabase/PostgREST serialises the error.
+  if (contactErr) {
+    const isConstraintViolation =
+      (contactErr as { code?: string }).code === '23505' ||
+      /duplicate key|unique/i.test(contactErr.message ?? '');
+
+    if (isConstraintViolation) {
+      const selectFields =
         'id, person_id, cell_id, tag, follow_up_status, follow_up_assignee, ' +
-        'date_contacted, notes, logged_by, archived, is_member, member_id'
-      )
-      .eq('logged_by', input.loggedBy)
-      .eq('idempotency_key', input.idempotencyKey)
-      .maybeSingle();
-    if (existingErr) throw new Error(existingErr.message);
-    if (existingContact) {
-      return {
-        person: mapPerson(personRow as unknown as Record<string, unknown>),
-        contact: mapContact(existingContact as unknown as Record<string, unknown>),
-      };
+        'date_contacted, notes, logged_by, archived, is_member, member_id';
+
+      // Primary recovery: idempotency key (covers same-key concurrent submits).
+      if (input.idempotencyKey) {
+        const { data: existingContact, error: existingErr } = await supabase
+          .from('contacts')
+          .select(selectFields)
+          .eq('logged_by', input.loggedBy)
+          .eq('idempotency_key', input.idempotencyKey)
+          .maybeSingle();
+        if (existingErr) throw new Error(existingErr.message);
+        if (existingContact) {
+          return {
+            person: mapPerson(personRow as unknown as Record<string, unknown>),
+            contact: mapContact(existingContact as unknown as Record<string, unknown>),
+          };
+        }
+      }
+
+      // Fallback recovery: same person + logger + date (no idempotency key supplied).
+      const dateContacted =
+        input.dateContacted ?? new Date().toISOString().split('T')[0];
+      const { data: existingByPerson, error: personLookupErr } = await supabase
+        .from('contacts')
+        .select(selectFields)
+        .eq('person_id', personId)
+        .eq('logged_by', input.loggedBy)
+        .eq('date_contacted', dateContacted)
+        .maybeSingle();
+      if (personLookupErr) throw new Error(personLookupErr.message);
+      if (existingByPerson) {
+        return {
+          person: mapPerson(personRow as unknown as Record<string, unknown>),
+          contact: mapContact(existingByPerson as unknown as Record<string, unknown>),
+        };
+      }
     }
+
+    throw new Error(contactErr.message ?? 'Contact insert failed');
   }
 
-  if (contactErr || !contactRow) throw new Error(contactErr?.message ?? 'Contact insert failed');
+  if (!contactRow) throw new Error('Contact insert failed');
 
   return {
     person: mapPerson(personRow as unknown as Record<string, unknown>),
