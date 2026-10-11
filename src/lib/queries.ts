@@ -1,5 +1,5 @@
 import { supabase } from './supabase';
-import type { Event, Member, Announcement, PrayerRequest, DashboardStats } from '../types';
+import type { Event, EventCategory, Member, Announcement, PrayerRequest, DashboardStats } from '../types';
 
 // ─── Events ──────────────────────────────────────────────────────────────────
 
@@ -22,6 +22,34 @@ export async function getAllEvents(): Promise<Event[]> {
     .order('date', { ascending: true });
   if (error) throw new Error(error.message);
   return data ?? [];
+}
+
+export interface EventInput {
+  title: string;
+  description?: string;
+  date: string;
+  time?: string;
+  location?: string;
+  category: EventCategory;
+  created_by: string;
+}
+
+export async function createEvent(input: EventInput): Promise<Event> {
+  const { data, error } = await supabase
+    .from('events')
+    .insert({
+      title: input.title,
+      description: input.description ?? null,
+      date: input.date,
+      time: input.time || null,
+      location: input.location ?? null,
+      category: input.category,
+      created_by: input.created_by,
+    })
+    .select()
+    .single();
+  if (error) throw new Error(error.message);
+  return data;
 }
 
 export async function rsvpEvent(eventId: string, userId: string): Promise<void> {

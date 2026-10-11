@@ -41,6 +41,7 @@ export interface Member {
   joined_at: string;
   phone?: string;
   student_number?: string;
+  cell_id?: string;
 }
 
 // ─── Announcements ───────────────────────────────────────────────────────────
@@ -95,6 +96,7 @@ export interface Contact {
   is_member: boolean;
   member_id?: string;
   logged_by: string;
+  idempotency_key?: string;
   archived: boolean;
   created_at: string;
   updated_at: string;
@@ -112,6 +114,7 @@ export interface ContactInput {
   date_contacted: string;
   notes?: string;
   is_member: boolean;
+  idempotency_key?: string;
 }
 
 export interface ContactFilters {
@@ -569,13 +572,14 @@ export type EmailTemplateType =
   | 'devotional_reminder'
   | 'testimony_approved'
   | 'weekly_digest'
+  | 'account_approved'
   | 'generic';
 
-export type EmailStatus = 'queued' | 'sent' | 'failed' | 'bounced';
+export type EmailStatus = 'queued' | 'sent' | 'failed' | 'bounced' | 'skipped';
 
+/** Account-owned notification preferences. `user_id` is the authenticated account (profiles.id = auth.users.id). */
 export interface EmailPreferences {
-  id: string;
-  member_id: string;
+  user_id: string;
   meeting_reminders_8am: boolean;
   meeting_reminders_1hr: boolean;
   message_notifications: boolean;
@@ -589,7 +593,7 @@ export interface EmailPreferences {
   updated_at: string;
 }
 
-export type EmailPreferencesInput = Omit<EmailPreferences, 'id' | 'member_id' | 'created_at' | 'updated_at'>;
+export type EmailPreferencesInput = Omit<EmailPreferences, 'user_id' | 'created_at' | 'updated_at'>;
 
 export interface EmailLog {
   id: string;
@@ -624,11 +628,12 @@ export type PushNotificationType =
   | 'habit'
   | 'devotional';
 
-export type PushStatus = 'sent' | 'failed' | 'clicked' | 'dismissed';
+export type PushStatus = 'queued' | 'sent' | 'failed' | 'clicked' | 'dismissed';
 
+/** A browser/device subscription owned by an account. An account may have many (one per endpoint). */
 export interface PushSubscriptionRecord {
   id: string;
-  member_id: string;
+  user_id: string;
   endpoint: string;
   auth: string;
   p256dh: string;
@@ -639,9 +644,10 @@ export interface PushSubscriptionRecord {
   created_at: string;
 }
 
+/** One delivery record per recipient account. Written by the backend only. */
 export interface PushNotificationLog {
   id: string;
-  member_id: string;
+  user_id: string;
   notification_type: PushNotificationType;
   title: string;
   body: string;
