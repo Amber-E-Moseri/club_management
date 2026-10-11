@@ -41,11 +41,17 @@ export async function fetchContactWithTags(
   return { contact, tags };
 }
 
+// cell_id is a nullable uuid column. An empty string is not a valid uuid, so an unassigned
+// cell must be sent as null. logged_by and the other fields are passed through unchanged.
+function withNullableCellId<T extends { cell_id?: string }>(input: T): T {
+  return input.cell_id === '' ? ({ ...input, cell_id: null } as unknown as T) : input;
+}
+
 export async function createContact(
   input: ContactInput & { logged_by: string }
 ): Promise<Contact> {
   const { data, error } = await supabase
-    .from('contacts').insert(input).select().single();
+    .from('contacts').insert(withNullableCellId(input)).select().single();
   if (error && input.idempotency_key && /duplicate key|unique/i.test(error.message ?? '')) {
     const { data: existing, error: existingError } = await supabase
       .from('contacts')
@@ -65,7 +71,7 @@ export async function updateContact(
   input: Partial<ContactInput>
 ): Promise<Contact> {
   const { data, error } = await supabase
-    .from('contacts').update(input).eq('id', id).select().single();
+    .from('contacts').update(withNullableCellId(input)).eq('id', id).select().single();
   if (error) throw new Error(error.message ?? 'Unknown error');
   return data;
 }

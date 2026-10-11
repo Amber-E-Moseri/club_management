@@ -70,13 +70,26 @@ export function useContactMutations(onSuccess?: () => void) {
     }
   };
 
-  const save = (input: ContactInput & { logged_by: string }, id?: string) =>
-    run(async () => {
-      if (id) return updateContact(id, input);
-      const saved = await createContact({ ...input, idempotency_key: input.idempotency_key ?? idempotencyKey.current });
-      idempotencyKey.current = makeIdempotencyKey();
+  // Rethrows on failure so the caller (ContactForm) can show the error and keep the form open.
+  // Swallowing it here made failed saves look successful: the dialog closed with nothing saved.
+  const save = async (input: ContactInput & { logged_by: string }, id?: string) => {
+    setSaving(true);
+    setError(null);
+    try {
+      const saved = id
+        ? await updateContact(id, input)
+        : await createContact({ ...input, idempotency_key: input.idempotency_key ?? idempotencyKey.current });
+      if (!id) idempotencyKey.current = makeIdempotencyKey();
+      onSuccess?.();
       return saved;
-    });
+    } catch (e) {
+      const message = e instanceof Error ? e.message : 'Save failed.';
+      setError(message);
+      throw e;
+    } finally {
+      setSaving(false);
+    }
+  };
 
   const archive = (id: string) => run(() => archiveContact(id));
   const remove   = (id: string) => run(() => deleteContact(id));
