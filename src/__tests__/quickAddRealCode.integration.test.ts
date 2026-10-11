@@ -23,6 +23,9 @@ const anonKey = process.env.CERT_SUPABASE_ANON_KEY ?? '';
 const serviceKey = process.env.CERT_SUPABASE_SERVICE_ROLE_KEY ?? '';
 const enabled = /^https?:\/\/(127\.0\.0\.1|localhost)[:/]/.test(url) && !!anonKey && !!serviceKey;
 const maybe = enabled ? describe : describe.skip;
+// Each test makes real round-trips to the local database. Under the full parallel Jest run the default 5s limit is
+// too tight for the first test, so give this file a longer limit. Assertions are unchanged.
+jest.setTimeout(30000);
 
 // The module under test imports `supabase` from ../lib/supabase; point it at the signed-in test client.
 jest.mock('../lib/supabase', () => ({
