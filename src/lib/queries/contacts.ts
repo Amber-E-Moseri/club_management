@@ -1,4 +1,5 @@
 import { supabase } from '../supabase';
+import { resolvePersonId } from './people';
 import type {
   Contact, ContactInput, ContactFilters, ContactTag, ContactStatus,
   Cell, ContactTagRelation, ContactFollowUp, ContactAuditLogEntry,
@@ -50,8 +51,15 @@ function withNullableCellId<T extends { cell_id?: string }>(input: T): T {
 export async function createContact(
   input: ContactInput & { logged_by: string }
 ): Promise<Contact> {
+  // contacts.person_id is NOT NULL. Resolve or create the person first, the same way Quick Add does,
+  // so every Outreach contact is linked to a person record.
+  const person_id = await resolvePersonId({
+    fullName: input.contact_name,
+    email: input.email,
+    phone: input.contact_phone,
+  });
   const { data, error } = await supabase
-    .from('contacts').insert(withNullableCellId(input)).select().single();
+    .from('contacts').insert(withNullableCellId({ ...input, person_id })).select().single();
   if (error && input.idempotency_key && /duplicate key|unique/i.test(error.message ?? '')) {
     const { data: existing, error: existingError } = await supabase
       .from('contacts')

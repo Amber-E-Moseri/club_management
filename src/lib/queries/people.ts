@@ -43,22 +43,15 @@ export async function createPerson(input: CreatePersonInput): Promise<Person> {
 }
 
 /**
- * Creates a person + contact relationship in a single logical operation.
- * This is the entry point for the "Log new contact" workflow.
- * Enforces ONE HUMAN = ONE PERSON RECORD by returning an existing person
- * when a matching email is found rather than creating a duplicate.
+ * Resolves the person a new contact belongs to. contacts.person_id is NOT NULL, so every contact needs one.
+ * Returns the existing person with the same confirmed email, or creates a new person record.
+ * Phone-only matches are ambiguous and are refused for staff review, never merged.
  */
-export async function createContactPerson(input: {
+export async function resolvePersonId(input: {
   fullName: string;
   email?: string | null;
   phone?: string | null;
-  cellId: string;
-  loggedBy: string;
-  tag?: string | null;
-  notes?: string | null;
-  dateContacted?: string;
-  idempotencyKey?: string;
-}): Promise<{ person: Person; contact: ContactRelationship }> {
+}): Promise<string> {
   // Duplicate guard: a confirmed email may identify the same person. Phone-only
   // matches are ambiguous and must be resolved by explicit staff review.
   let personId: string | null = null;
@@ -99,6 +92,33 @@ export async function createContactPerson(input: {
       }
     }
   }
+
+  if (!personId) throw new Error('Person could not be resolved for this contact.');
+  return personId;
+}
+
+/**
+ * Creates a person + contact relationship in a single logical operation.
+ * This is the entry point for the "Log new contact" workflow.
+ * Enforces ONE HUMAN = ONE PERSON RECORD by returning an existing person
+ * when a matching email is found rather than creating a duplicate.
+ */
+export async function createContactPerson(input: {
+  fullName: string;
+  email?: string | null;
+  phone?: string | null;
+  cellId: string;
+  loggedBy: string;
+  tag?: string | null;
+  notes?: string | null;
+  dateContacted?: string;
+  idempotencyKey?: string;
+}): Promise<{ person: Person; contact: ContactRelationship }> {
+  const personId = await resolvePersonId({
+    fullName: input.fullName,
+    email: input.email,
+    phone: input.phone,
+  });
 
   // Fetch the person row (either found or freshly created)
   const { data: personRow, error: personErr } = await supabase
