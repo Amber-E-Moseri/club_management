@@ -1,11 +1,12 @@
 import React, { useState } from 'react';
-import { BookOpen } from 'lucide-react';
+import { BookOpen, AlertCircle } from 'lucide-react';
 import { ConfessionCard } from '../components/feature/ConfessionCard';
 import { Button } from '../components/foundation/Button';
 import { Input } from '../components/foundation/Input';
 import { Modal } from '../components/foundation/Modal';
 import { useConfessions } from '../hooks/useConfessions';
 import type { AuthUser } from '../lib/auth';
+import { PageHeader } from '../components/foundation/PageHeader';
 
 interface Props { user: AuthUser | null; }
 
@@ -45,20 +46,17 @@ export const DailyConfessions: React.FC<Props> = ({ user }) => {
   return (
     <div className="max-w-3xl mx-auto space-y-5">
       {/* Header */}
-      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3">
-        <div>
-          <h1 className="text-2xl font-bold text-gray-900">Daily Confessions</h1>
-          <p className="text-sm text-gray-500 mt-0.5">Declare God's word over your life</p>
-        </div>
-        {isManager && (
-          <Button variant="primary" onClick={() => setAddOpen(true)}>+ New Confession</Button>
-        )}
-      </div>
+      <PageHeader
+        eyebrow="Daily"
+        title="Daily Confessions"
+        description="Declare God's word over your life"
+        actions={isManager ? <Button variant="primary" onClick={() => setAddOpen(true)}>+ New Confession</Button> : undefined}
+      />
 
       {/* Date navigation */}
       <div className="flex items-center gap-3">
         <button
-          className="w-8 h-8 flex items-center justify-center rounded-full border border-gray-200 hover:bg-gray-50 text-gray-500"
+          className="w-8 h-8 flex items-center justify-center rounded-full border border-gray-200 dark:border-slate-700 hover:bg-gray-50 dark:hover:bg-slate-800 text-gray-500 dark:text-slate-400"
           onClick={() => {
             const d = new Date(viewDate);
             d.setDate(d.getDate() - 1);
@@ -72,7 +70,7 @@ export const DailyConfessions: React.FC<Props> = ({ user }) => {
           className="max-w-[160px]"
         />
         <button
-          className="w-8 h-8 flex items-center justify-center rounded-full border border-gray-200 hover:bg-gray-50 text-gray-500"
+          className="w-8 h-8 flex items-center justify-center rounded-full border border-gray-200 dark:border-slate-700 hover:bg-gray-50 dark:hover:bg-slate-800 text-gray-500 dark:text-slate-400"
           onClick={() => {
             const d = new Date(viewDate);
             d.setDate(d.getDate() + 1);
@@ -85,13 +83,13 @@ export const DailyConfessions: React.FC<Props> = ({ user }) => {
       </div>
 
       {error && (
-        <div className="bg-red-50 border border-red-200 text-red-700 rounded-lg px-4 py-3 text-sm">{error}</div>
+        <div className="bg-york-50 dark:bg-york-900/30 border border-york-200 dark:border-york-800 text-york-700 dark:text-york-300 rounded-lg px-4 py-3 text-sm">{error}</div>
       )}
 
       {loading && (
         <div className="space-y-3">
           {[...Array(3)].map((_, i) => (
-            <div key={i} className="h-32 bg-gray-100 rounded-lg animate-pulse" />
+            <div key={i} className="h-32 bg-gray-100 dark:bg-slate-800 rounded-lg animate-pulse" />
           ))}
         </div>
       )}
@@ -99,7 +97,7 @@ export const DailyConfessions: React.FC<Props> = ({ user }) => {
       {!loading && confessions.length === 0 && (
         <div className="text-center py-16 bg-white dark:bg-slate-800 border border-gray-200 dark:border-slate-700 rounded-lg">
           <BookOpen className="w-10 h-10 mx-auto mb-3 text-gray-300 dark:text-slate-600" />
-          <p className="text-base font-semibold text-gray-700">No confessions for this day</p>
+          <p className="text-base font-semibold text-gray-700 dark:text-slate-200">No confessions for this day</p>
           {isManager && (
             <p className="text-sm text-gray-400 mt-1">
               Add confessions using the button above.
@@ -159,7 +157,7 @@ export const DailyConfessions: React.FC<Props> = ({ user }) => {
             onChange={setNewDate}
             required
           />
-          {formError && <p className="text-sm text-red-600">⚠️ {formError}</p>}
+          {formError && <p className="text-sm text-york-600 dark:text-york-400"><AlertCircle className="inline w-3.5 h-3.5 mr-1 -mt-0.5" aria-hidden="true" />{formError}</p>}
         </div>
       </Modal>
     </div>
